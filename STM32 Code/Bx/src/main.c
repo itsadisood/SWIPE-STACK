@@ -19,8 +19,48 @@ int main(void)
 
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing usart4 to communicate with Bx
-//	sendATCheck(); // check handshake with OK reception
-	sendATAddr(); // send at command to get address
+	sendATCheck(); // send AT handshake
+	sendBxWake();  // send random long string to wakeup
+	sendATAddr();  // send AT command to get MAC address
+	sendBxName();  // send AT command to rename
+}
+
+void sendBxName()
+{
+	  // send random strings >80 chars to wakie wakie
+	  char* nameTx = "AT+NAMETetris";
+	  char* nameRx[2]  = {};
+
+	  // send "AT" test command
+	  for(uint32_t i = 0; nameTx[i] != '\0'; i++){
+		  while(!(USART4->ISR & USART_ISR_TXE)){}
+		  USART4 -> TDR = nameTx[i];
+	  }
+
+	  return 0;
+}
+
+void sendBxWake()
+{
+	  // send random strings >80 chars to wakie wakie
+	  char* wakeTx = "mA44crMralwkGswlWusRSkReoLCnvJU4xxoRKUNnkYRLU9HPlekPb1Eegu3HSlpTze3nphT1oW2PEfD4bsj5UMQZn2KRSLHRg0YZ";
+	  char* wakeRx[2]  = {};
+	  // send "AT" test command
+	  for(int p = 0; p < 10; p++)
+	  {
+		  for(uint32_t i = 0; i < 100; i++){
+			  while(!(USART4->ISR & USART_ISR_TXE)){}
+			  USART4 -> TDR = wakeTx[i];
+		  }
+	  }
+
+	  // expect "OK" from Bx
+	  for(int i = 0; i < 2; i++)
+	  {
+		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
+		  wakeRx[i] = USART4->RDR;
+	  }
+	  return 0;
 }
 
 void sendATAddr()
@@ -28,13 +68,13 @@ void sendATAddr()
 	  uint8_t* testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
 	  uint8_t* testAddrRx[20] = {};
 
-	  // send "AT" test command
+	  // send "AT+Addr?" command
 	  for(uint32_t i = 0; i < 8; i++){
 		  while(!(USART4->ISR & USART_ISR_TXE)){}
 		  USART4 -> TDR = testAddrTx[i];
 	  }
 
-	  // expect "OK" from Bx
+	  // expect "OK+Mac Addr" from Bx
 	  for(int i = 0; i < 20; i++)
 	  {
 		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
