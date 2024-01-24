@@ -23,7 +23,7 @@ int main(void)
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing usart4 to communicate with Bx
 	sendATCheck(); // send AT handshake
-	//sendBxWake();  // send random long string to wakeup NOT WORKING
+	sendBxWake();  // send random long string to wakeup NOT WORKING
 	sendATAddr();  // send AT command to get MAC address
 	sendBxName();  // send AT command to rename
 	uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
