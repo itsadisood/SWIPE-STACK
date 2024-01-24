@@ -27,6 +27,14 @@ int main(void)
 	sendATAddr();  // send AT command to get MAC address
 	sendBxName();  // send AT command to rename
 	uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
+	setATRole("1"); // set to central device
+}
+
+void setATRole(char *role)
+{
+	char roleTx[8] = "AT+ROLE";
+	strcat(roleTx, role); // append parameter
+	char roleRx[8] = {};
 }
 
 int getAdvInterval()
