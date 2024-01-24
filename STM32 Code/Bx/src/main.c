@@ -12,6 +12,9 @@
 #include "stm32f0xx.h"
 			
 
+const char *RXMACADDR = "E4E11295D8C6"; // known MAC address for Main RX BT on STM32F0 PCB
+const char *RXNAME   = "Tetris";
+
 int main(void)
 {
 
@@ -20,42 +23,74 @@ int main(void)
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing usart4 to communicate with Bx
 	sendATCheck(); // send AT handshake
-	sendBxWake();  // send random long string to wakeup
+	//sendBxWake();  // send random long string to wakeup NOT WORKING
 	sendATAddr();  // send AT command to get MAC address
 	sendBxName();  // send AT command to rename
+	uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
+}
+
+int getAdvInterval()
+{
+	char* advTx = "AT+ADVI?";
+	char advRx[8] = {};
+
+	// send message to obtain advertising interval
+	for(uint32_t i = 0; advTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = advTx[i];
+	}
+
+	// expect "OK+GET:[P]" from Bx
+	for(int i = 0; i < 8; i++)
+	{
+		while (!(USART4->ISR & USART_ISR_RXNE)) {}
+		advRx[i] = USART4->RDR;
+	}
+	return (uint32_t) advRx[7];
 }
 
 void sendBxName()
 {
-	  // send random strings >80 chars to wakie wakie
+	  // set name of bluetooth device
 	  char* nameTx = "AT+NAMETetris";
-	  char* nameRx[2]  = {};
+	  char nameRx[13]  = {};
 
 	  // send "AT" test command
-	  for(uint32_t i = 0; nameTx[i] != '\0'; i++){
+	  for(uint32_t i = 0; nameTx[i] != '\0'; i++)
+	  {
 		  while(!(USART4->ISR & USART_ISR_TXE)){}
 		  USART4 -> TDR = nameTx[i];
 	  }
 
-	  return 0;
+	  for(int i = 0; i < 13; i++)
+	  	{
+	  		while (!(USART4->ISR & USART_ISR_RXNE)) {}
+	  		nameRx[i] = USART4->RDR;
+	  	}
+	  char *temp = strchr(nameRx, 'T');
+	  return strcmp(RXNAME, temp);
 }
 
 void sendBxWake()
 {
 	  // send random strings >80 chars to wakie wakie
-	  char* wakeTx = "mA44crMralwkGswlWusRSkReoLCnvJU4xxoRKUNnkYRLU9HPlekPb1Eegu3HSlpTze3nphT1oW2PEfD4bsj5UMQZn2KRSLHRg0YZ";
-	  char* wakeRx[2]  = {};
-	  // send "AT" test command
-	  for(int p = 0; p < 10; p++)
+	  char wakeTx[1001];
+	  for(uint32_t k = 0; k < 1001; k++)
 	  {
-		  for(uint32_t i = 0; i < 100; i++){
-			  while(!(USART4->ISR & USART_ISR_TXE)){}
-			  USART4 -> TDR = wakeTx[i];
-		  }
+		  wakeTx[k] = 0x42; // send in some 8 byte char
+	  }
+	  //char* wakeTx = "mA44crMralwkGswlWusRSkReoLCnvJU4xxoRKUNnkYRLU9HPlekPb1Eegu3HSlpTze3nphT1oW2PEfD4bsj5UMQZn2KRSLHRg0YZ";
+	  char wakeRx[7] = {};
+	  // send "AT" test command
+	  for(uint32_t i = 0; i < 1001; i++)
+	  {
+		  while(!(USART4->ISR & USART_ISR_TXE)){}
+		  USART4 -> TDR = wakeTx[i];
 	  }
 
 	  // expect "OK" from Bx
-	  for(int i = 0; i < 2; i++)
+	  for(int i = 0; i < 7; i++)
 	  {
 		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
 		  wakeRx[i] = USART4->RDR;
@@ -65,8 +100,8 @@ void sendBxWake()
 
 void sendATAddr()
 {
-	  uint8_t* testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
-	  uint8_t* testAddrRx[20] = {};
+	  uint8_t testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
+	  uint8_t testAddrRx[19] = {};
 
 	  // send "AT+Addr?" command
 	  for(uint32_t i = 0; i < 8; i++){
@@ -75,18 +110,19 @@ void sendATAddr()
 	  }
 
 	  // expect "OK+Mac Addr" from Bx
-	  for(int i = 0; i < 20; i++)
+	  for(int i = 0; i < 19; i++)
 	  {
 		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
 		  testAddrRx[i] = USART4->RDR;
 	  }
-	  return 0;
+	  char *temp = strchr(testAddrRx, 'E'); // extract MAC addr
+	  return strcmp(RXMACADDR, temp);
 }
 
 void sendATCheck()
 {
-	  uint8_t* testTX[2] = {'A','T'};
-	  uint8_t* testRX[2] = {};
+	  uint8_t testTX[2] = {'A','T'};
+	  uint8_t testRX[2];
 
 	  // send "AT" test command
 	  for(uint32_t i = 0; i < 2; i++){
@@ -100,12 +136,7 @@ void sendATCheck()
 		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
 		  testRX[i] = USART4->RDR;
 	  }
-
-	  if(strcmp(testRX,"OK"))
-	  {
-		  return 1;
-	  }
-	  return 0;
+	  return strcmp(testRX, "OK");
 }
 
 void setupGPIO(){
@@ -127,4 +158,7 @@ void setupUART(){
 	USART4 -> CR1 |= USART_CR1_TE;				           // transmitter enable
 	USART4 -> CR1 |= USART_CR1_RE;				           // receiver enable
 	USART4 -> CR1 |= USART_CR1_UE;                         // enable usart
+
+	while(!(((USART4 -> ISR) & USART_ISR_TEACK) && ((USART4 -> ISR) & USART_ISR_REACK))); // wait for TEACK and REACK to be set
 }
+
