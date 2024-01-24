@@ -2,54 +2,211 @@
 Vishnu Lagudu
 vlagudu@purdue.edu
 
-Basic implementation of tetris game
+Basid implementaion of the tetris with pygame
 """
-from random import randrange
-import pygame, sys
 
-# cell coinfiguration
-cell_size = 18
-cols      = 10
-rows      = 22
-maxfps    = 30
+import pygame, random
 
-# Single Shapes
-tetris_shapes = [
-  [[1, 1, 1],
-   [0, 1, 0]],
+"""
+10 x 20 square grid
+shapes: S, Z, I, O, J, L, T
+represented in order by 0 - 6
+"""
 
-  [[0, 2, 2],
-   [2, 2, 0]],
+pygame.font.init()
 
-  [[3, 3, 0],
-   [0, 3, 3]],
+# globals
+s_width     = 800
+s_height    = 700
+play_width  = 300  # meaning 300 // 10 = 30 width per block
+play_height = 600  # meaning 600 // 20 = 20 height per block
+block_size  = 30
+rows        = 20
+cols        = 10
+
+top_left_x = (s_width - play_width) // 2
+top_left_y = s_height - play_height
+
+
+# shape formats
+
+S = [['.....',
+      '......',
+      '..00..',
+      '.00...',
+      '.....'],
+     ['.....',
+      '..0..',
+      '..00.',
+      '...0.',
+      '.....']]
+
+Z = [['.....',
+      '.....',
+      '.00..',
+      '..00.',
+      '.....'],
+     ['.....',
+      '..0..',
+      '.00..',
+      '.0...',
+      '.....']]
+
+I = [['..0..',
+      '..0..',
+      '..0..',
+      '..0..',
+      '.....'],
+     ['.....',
+      '0000.',
+      '.....',
+      '.....',
+      '.....']]
+
+O = [['.....',
+      '.....',
+      '.00..',
+      '.00..',
+      '.....']]
+
+J = [['.....',
+      '.0...',
+      '.000.',
+      '.....',
+      '.....'],
+     ['.....',
+      '..00.',
+      '..0..',
+      '..0..',
+      '.....'],
+     ['.....',
+      '.....',
+      '.000.',
+      '...0.',
+      '.....'],
+     ['.....',
+      '..0..',
+      '..0..',
+      '.00..',
+      '.....']]
+
+L = [['.....',
+      '...0.',
+      '.000.',
+      '.....',
+      '.....'],
+     ['.....',
+      '..0..',
+      '..0..',
+      '..00.',
+      '.....'],
+     ['.....',
+      '.....',
+      '.000.',
+      '.0...',
+      '.....'],
+     ['.....',
+      '.00..',
+      '..0..',
+      '..0..',
+      '.....']]
+
+T = [['.....',
+      '..0..',
+      '.000.',
+      '.....',
+      '.....'],
+     ['.....',
+      '..0..',
+      '..00.',
+      '..0..',
+      '.....'],
+     ['.....',
+      '.....',
+      '.000.',
+      '..0..',
+      '.....'],
+     ['.....',
+      '..0..',
+      '.00..',
+      '..0..',
+      '.....']]
+
+# index 0 - 6 represent shape
+shapes       = [S, Z, I, O, J, L, T]
+shape_colors = [(0, 255, 0), (255, 0, 0), (0, 255, 255), (255, 255, 0), (255, 165, 0), (0, 0, 255), (128, 0, 128)]
+
+
+class Piece(object):
+  def __init__(self, col, row, shape) -> None:
+    self.x        = col
+    self.y        = row
+    self.shape    = shape
+    self.color    = shape_colors[shapes.index(shape)]
+    self.rotation = 0
+
+
+def create_grid(locked_positions={}):
+  grid = [[(0, 0, 0) for _ in range(cols)] for _ in range(rows)]
   
-  [[4, 0, 0],
-   [4, 4, 4]],
-
-  [[0, 0, 5],
-   [5, 5, 5]],
+  for x in range(rows):
+    for y in range(cols):
+      if (x, y) in locked_positions:
+        grid[x][y] = locked_positions[(x,y)]
   
-  [[6, 6, 6, 6]],
+  return grid
 
-  [[7, 7],
-   [7, 7]]
-]
+def convert_shape_format(shape):
+  pass
 
-def new_board():
-  board = [[0 for x in range(cols)]
-           for y in range(rows)]
-  board += [[1 for x in range(cols)]]
-  return board
+def valid_space(shape, grid):
+  pass
 
-class Tetris (object):
-   def __init__(self) -> None:
-      pygame.init()
-      pygame.key.set_repeat (250, 25)
-      self.width  = cell_size * (cols + 6)
-      self.height = cell_size * rows
-      self. 
+def check_lost(positions):
+  pass
 
-if __name__ == '__main__':
-    def __init__(self):
-       pygame.init()
+def get_shape():
+  # cols = 5 (x-cord is screen mid)
+  # rows = 0 (start falling from top of screen)
+  return Piece(5, 0, random.choice(shapes))
+
+def draw_text_middle(text, size, color, surface):  
+  pass
+   
+def draw_grid(surface, grid):
+
+  for i in range (len(grid)):
+    for j in range (len(grid[i])):
+      pygame.draw.rect(surface, grid[i][j], (top_left_x+(j*block_size), top_left_y+(i*block_size), block_size, block_size), 0)
+  
+  pygame.draw.rect(surface, (255,0,0), (top_left_x, top_left_y, play_width, play_height), 4)
+  
+
+def clear_rows(grid, locked):
+  pass
+
+def draw_next_shape(shape, surface):
+  pass
+
+def draw_window(surface, grid):
+  surface.fill((0, 0, 0))
+
+  # game title
+  pygame.font.init()
+  font  = pygame.font.SysFont('comicsans', 60)
+  label = font.render('TETRIS', 1, (255, 255, 255))
+
+  surface.blit (label, (top_left_x + play_width / 2 - (label.get_width() / 2), 30))
+
+  draw_grid(surface, grid)
+  pygame.display.update()
+
+
+def main():
+  locked_positions = {}
+  grid = create_grid (locked_positions)
+
+def main_menu():
+  pass
+
+main_menu()  # start game
