@@ -10,10 +10,18 @@
 
 
 #include "stm32f0xx.h"
+#include <string.h>
 			
 
-const char *RXMACADDR = "E4E11295D8C6"; // known MAC address for Main RX BT on STM32F0 PCB
-const char *RXNAME   = "Tetris";
+// main game receiver characteristics for right glove (MASTER)
+const char *RX_MACADDR_R = "E4E11295D8C6"; // known MAC address for Main RX BT on STM32F0 PCB
+const char *RX_NAME_R   = "TetrisR";
+const char *RX_ADVINT_R  = "100ms";
+
+// right glove transmitter characteristics (SLAVE)
+const char *TX_MACADDR_R = "609866F5B565";
+const char *TX_NAME_R = "GloveR";
+const char *TX_ADVINT_R  = "100ms";
 
 int main(void)
 {
@@ -22,12 +30,107 @@ int main(void)
 
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing usart4 to communicate with Bx
-	sendATCheck(); // send AT handshake
-	sendBxWake();  // send random long string to wakeup NOT WORKING
-	sendATAddr();  // send AT command to get MAC address
-	sendBxName();  // send AT command to rename
-	uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
-	setATRole("1"); // set to central device
+	//sendATCheck(); // send AT handshake
+	//sendBxWake();  // send random long string to wakeup NOT WORKING
+	//sendATAddr();  // send AT command to get MAC address
+	//sendBxName();  // send AT command to rename
+	//uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
+	//setATRole("1"); // set to master device
+	//sendATCon();
+	//getATImme();
+	//setATImme("1"); // dont start in WORK mode out of reset
+	//sendATStart();
+	//sendATDisc(); // let master discover peripherals
+}
+
+void sendATStart()
+{
+	char * startTx = "AT+START";
+	char startRx[8]   = {};
+
+	for(uint32_t i = 0; startTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = startTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		startRx[i] = USART4 -> RDR;
+	}
+}
+
+void sendATCon()
+{
+	char * conTx = "AT+CON609866F5B565"; //FB?
+	char   conRx[8] = {};
+
+	for(uint32_t i = 0; conTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = conTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		conRx[i] = USART4 -> RDR;
+	}
+}
+
+void setATImme(char * mode)
+{
+	char immeTx[8] = "AT+IMME";
+	strcat(immeTx, mode); // append parameter
+	char immeRx[8] = {};
+
+	for(uint32_t i = 0; immeTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = immeTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART4 -> RDR;
+	}
+}
+
+void getATImme()
+{
+	char *immeTx = "AT+IMME?";
+	char immeRx[8] = {};
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = immeTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART4 -> RDR;
+	}
+}
+
+
+void sendATDisc()
+{
+	char *discTx = "AT+DISC?";
+	char discRx[100] = {}; //"OK+DISCS"
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = discTx[i];
+	}
+
+	for(uint32_t i = 0; i < 100; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		discRx[i] = USART4 -> RDR;
+	}
 }
 
 void setATRole(char *role)
@@ -35,6 +138,20 @@ void setATRole(char *role)
 	char roleTx[8] = "AT+ROLE";
 	strcat(roleTx, role); // append parameter
 	char roleRx[8] = {};
+
+	for(uint32_t i = 0; roleTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = roleTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		roleRx[i] = USART4 -> RDR;
+	}
+	//return strcmp(roleRx + 7, role); // broken comparison
+
 }
 
 int getAdvInterval()
@@ -61,8 +178,8 @@ int getAdvInterval()
 void sendBxName()
 {
 	  // set name of bluetooth device
-	  char* nameTx = "AT+NAMETetris";
-	  char nameRx[13]  = {};
+	  char* nameTx = "AT+NAMETetrisR";
+	  char nameRx[14]  = {};
 
 	  // send "AT" test command
 	  for(uint32_t i = 0; nameTx[i] != '\0'; i++)
@@ -71,13 +188,13 @@ void sendBxName()
 		  USART4 -> TDR = nameTx[i];
 	  }
 
-	  for(int i = 0; i < 13; i++)
+	  for(int i = 0; i < 14; i++)
 	  	{
 	  		while (!(USART4->ISR & USART_ISR_RXNE)) {}
 	  		nameRx[i] = USART4->RDR;
 	  	}
 	  char *temp = strchr(nameRx, 'T');
-	  return strcmp(RXNAME, temp);
+	  return strcmp(RX_NAME_R, temp);
 }
 
 void sendBxWake()
@@ -124,7 +241,7 @@ void sendATAddr()
 		  testAddrRx[i] = USART4->RDR;
 	  }
 	  char *temp = strchr(testAddrRx, 'E'); // extract MAC addr
-	  return strcmp(RXMACADDR, temp);
+	  return strcmp(RX_MACADDR_R, temp);
 }
 
 void sendATCheck()
