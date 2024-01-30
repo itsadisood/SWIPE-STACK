@@ -30,7 +30,7 @@ int main(void)
 
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing usart4 to communicate with Bx
-	//sendATCheck(); // send AT handshake
+	sendATCheck(); // send AT handshake
 	//sendBxWake();  // send random long string to wakeup NOT WORKING
 	//sendATAddr();  // send AT command to get MAC address
 	//sendBxName();  // send AT command to rename
@@ -273,7 +273,7 @@ void setupGPIO(){
 }
 
 void setupUART(){
-	RCC -> APB1ENR |= RCC_APB1ENR_USART4EN;                // clock on for usart5
+	RCC -> APB1ENR |= RCC_APB1ENR_USART4EN;                // clock on for usart4
 	USART4 -> CR1 &= ~USART_CR1_UE;                        // turn off for config
 	USART4 -> CR1 &= ~USART_CR1_M;                         // 8 bit word length
 	USART4 -> CR2 &= ~USART_CR2_STOP;                      // 1 stop bits
