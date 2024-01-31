@@ -12,11 +12,21 @@
 #include "stm32f0xx.h"
 #include "stdio.h"
 #include "stdlib.h"
+int firstSPI = 0;
+unsigned char reverse(unsigned char b) {
+   b = (b & 0xF0) >> 4 | (b & 0x0F) << 4;
+   b = (b & 0xCC) >> 2 | (b & 0x33) << 2;
+   b = (b & 0xAA) >> 1 | (b & 0x55) << 1;
+   return b;
+}
 
+void wait(int size ){
+  for(int i = 0; i < size * 10000; i++){
+  }
+}
 
-
-void wait(void){
-  for(int i = 0; i < 10000000; i++){}
+void nanoWait(int size){
+  for(int i = 0; i < 225 * size; i++){}
 }
 
 void debugSend(char txdata) {
@@ -35,7 +45,13 @@ void debugSendString(char* data) {
 void printPin(int pinVal, char* pin) {
   char* output = malloc(sizeof(char)*30);
   int pinBool = 1 && pinVal;
-  sprintf(output, "GPIO Pin %s value is %d\r\n", pin, pinBool);
+  sprintf(output, "%s value is %d\r\n", pin, pinBool);
+  debugSendString(output);
+  free(output);
+}
+void printInt(int val, char* pin) {
+  char* output = malloc(sizeof(char)*30);
+  sprintf(output, "%s value is %d\r\n", pin, val);
   debugSendString(output);
   free(output);
 }
@@ -56,27 +72,44 @@ void spiSend(char* txdata) {
   }
 }
 
-void EXTI4_15_IRQHandler(void){
-  int zero = 0;
-  //GPIOA->BSRR |= GPIO_BSRR_BR_11;
-  //SPI1->CR1 &= !SPI_CR1_SSI;
-    //if transmit buffer is empty, set next value
-    if(SPI1->SR & SPI_SR_TXE) {
-      SPI1->DR = (char)zero;
-    }
-    while(!(SPI1->SR & SPI_SR_TXE)){};
-    //GPIOA->BSRR |= GPIO_BSRR_BS_11;
-    //SPI1->CR1 |= SPI_CR1_SSI;
-    //if receive buffer is not empty, send recieved data over UART
-    if(SPI1->SR & SPI_SR_RXNE){
-      //debugSend((char)(SPI1->DR));
-    }
-   //reset interrupt flag
-   EXTI->PR |= EXTI_PR_PR10;
-}
-void SPI1_IRQHANDLER(void){
-  debugSendString("SPI Data Received");
+//void TXEIE_IRQHANDLER(void){
+//  //toggle the chipselect back up
+//  GPIOA->BSRR |= GPIO_BSRR_BS_3;
+//}
 
+void EXTI4_15_IRQHandler(void){
+  SPI1->CR1 |= SPI_CR1_SPE;
+  if(!firstSPI){
+    int data = 0;
+    int sends = 0;
+    int reads = 0;
+    GPIOA->BSRR |= GPIO_BSRR_BR_3;
+    //read header
+    int header[4];
+    //transmit and receive 24 bytes
+    while(sends < 24 || reads < 24){
+      if((SPI1->SR & SPI_SR_TXE) && !(SPI1->SR & SPI_SR_RXNE)){
+        *(uint8_t*)&SPI1->DR = sends;
+        sends++;
+      }
+      if(SPI1->SR & SPI_SR_RXNE){
+        if(reads<4){
+          header[reads] = *(uint8_t*)&SPI1->DR;
+          printInt(header[reads], "Header Info");
+        }
+        else{
+          printInt(*(uint8_t*)&SPI1->DR, "Cargo Info");
+        }
+        reads++;
+      }
+    }
+    firstSPI = 1;
+    GPIOA->BSRR |= GPIO_BSRR_BS_3;
+
+  }
+
+  SPI1->CR1 &= ~SPI_CR1_SPE;
+  EXTI->PR |= EXTI_PR_PR10;
 }
 
 void setup_serial(void)
@@ -95,27 +128,34 @@ void setup_serial(void)
 }
 
 void setup_SPI1(void) {
+  //enable clock for SPI and GPIOA
     RCC->APB2ENR |= RCC_APB2ENR_SPI1EN;
-    SPI1->CR1 |= !SPI_CR1_SPE;
     RCC->AHBENR |= RCC_AHBENR_GPIOAEN;
 
+    //clear SPE bit before configuring
+    SPI1->CR1 &= ~SPI_CR1_SPE;
+
+    //configure GPIOA pins for alternative function for SPI
     GPIOA->MODER |= GPIO_MODER_MODER4_1;
     GPIOA->MODER |= GPIO_MODER_MODER5_1;
     GPIOA->MODER |= GPIO_MODER_MODER6_1;
     GPIOA->MODER |= GPIO_MODER_MODER7_1;
 
 
-    //Set up the reset and wake pins
-    //GPIOA->MODER |= GPIO_MODER_MODER4_0;
+    //Set up the reset, wake, manual nss and sync pins
+    GPIOA->MODER |= GPIO_MODER_MODER2_0;
+    GPIOA->MODER |= GPIO_MODER_MODER3_0;
     GPIOA->MODER |= GPIO_MODER_MODER11_0;
     GPIOA->MODER |= GPIO_MODER_MODER12_0;
 
+    //Reset the RST pin value
     GPIOA->BSRR |= GPIO_BSRR_BR_12;
 
     //(set wake high)
     GPIOA->BSRR |= GPIO_BSRR_BS_11;
-    //set nss high
-    //GPIOA->BSRR |= GPIO_BSRR_BS_4;
+    //set nss and sync high
+    GPIOA->BSRR |= GPIO_BSRR_BS_3;
+    GPIOA->BSRR |= GPIO_BSRR_BS_2;
 
 
 
@@ -131,29 +171,37 @@ void setup_SPI1(void) {
     //SPI1->CR1 |= SPI_CR1_SSM;
     //SPI1->CR1 |= SPI_CR1_SSI;
     SPI1->CR2 |= SPI_CR2_SSOE;
-    //
-    SPI1->CR2 &= !SPI_CR2_DS_3;
+
+    //Set data size to 16 bits
+    //SPI1->CR2 &= ~SPI_CR2_DS_3;
     SPI1->CR2 |= SPI_CR2_NSSP;
+
+    //set RXNE for 8 bit reads
+    SPI1->CR2 |= SPI_CR2_FRXTH;
+
+
+    GPIOA->BSRR |= GPIO_BSRR_BS_12;
 
     //configure GPIO interrupt through EXTI
     SYSCFG->EXTICR[2] |= SYSCFG_EXTICR3_EXTI10_PA;
     EXTI->IMR |= EXTI_IMR_MR10;
-    EXTI->FTSR |= EXTI_FTSR_TR10;
+    EXTI->RTSR |= EXTI_RTSR_TR10;
     NVIC->ISER[0] |= 1 << 7;
 
 
     //enable spi receive register not empty interrupt
-    //SPI1->CR2 |= SPI_CR2_RXNEIE;
+    //SPI1->CR2 |= SPI_CR2_TXEIE;
 
-    SPI1->CR1 |= SPI_CR1_SPE;
+
 
     //toggle the reset off (high)
-    GPIOA->BSRR |= GPIO_BSRR_BS_12;
+
 }
 int main(void)
 {
   char* myString = "Hello World!---------------------------------\r\n";
   int iterator = 0;
+  int loopCount = 0;
 
   setup_serial();
   setup_SPI1();
@@ -162,7 +210,9 @@ int main(void)
   printPin(SPI1->CR2 & SPI_CR2_DS_2, "DR 2");
   printPin(SPI1->CR2 & SPI_CR2_DS_3, "DR 3");
 
-  while(iterator < 12)
+
+
+  while(myString[iterator] != '\0')
   {
 //    if(USART5->ISR & USART_ISR_TXE) {
       //USART5->TDR = myString[iterator];
@@ -170,19 +220,25 @@ int main(void)
       iterator++;
     }
 //  }
-  //toggle wake on (low)
-  //GPIOA->BSRR |= GPIO_BSRR_BR_11;
+
   while(/*(GPIOA->IDR & GPIO_IDR_10)*/1 == 1){
-    debugSendString("Awaiting HOST_INTN\r\n");
-    printPin((GPIOA->IDR&GPIO_IDR_10), "PIN Interrupt");
-    printPin((GPIOA->ODR&GPIO_ODR_11), "PIN WAKE");
-    printPin((GPIOA->ODR&GPIO_ODR_12), "PIN RESET");
-    wait();
+//    debugSendString("Awaiting HOST_INTN\r\n");
+//    printPin((GPIOA->IDR&GPIO_IDR_10), "PIN Interrupt");
+//    printPin((GPIOA->ODR&GPIO_ODR_11), "PIN WAKE");
+//    printPin((GPIOA->ODR&GPIO_ODR_12), "PIN RESET");
+//    printPin(SPI1->SR & SPI_SR_TXE, "TX EMPTY");
+//    printPin(SPI1->SR & SPI_SR_RXNE, "RX NOT EMPTY");
+//    printInt(loopCount, "Iteration");
+//    printInt(SPI1->CR1 & SPI_CR1_SPE, "SPE");
+
+    wait(100);
+    loopCount = loopCount + 1;
 
   }
-  GPIOA->BSRR |= GPIO_BSRR_BR_11;
-  wait();
-  GPIOA->BSRR |= GPIO_BSRR_BS_11;
+  //reset
+  GPIOA->BSRR |= GPIO_BSRR_BR_2;
+
+  wait(100);
 
 
   //char spiString[3] = {(char)0, (char)0, '\0'};
