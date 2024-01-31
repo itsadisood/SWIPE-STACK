@@ -29,17 +29,23 @@ int main(void)
 //	for(;;);
 
 	setupGPIO(); // Pa0, Pa1 key
+<<<<<<< HEAD
 	setupUART(); // utilizing USART5 to communicate with Bx
 	sendATCheck(); // send AT handshake
+=======
+	setupUART(); // utilizing usart4 to communicate with Bx
+//	sendATCheck(); // send AT handshake
+>>>>>>> 4d2af454ef6cea91f6e97b731f0a21b01a5a459c
 	//sendBxWake();  // send random long string to wakeup NOT WORKING
 	//sendATAddr();  // send AT command to get MAC address
 	//sendBxName();  // send AT command to rename
 	//uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
 	//setATRole("1"); // set to master device
-	//sendATCon();
+	sendATCon();
 	//getATImme();
 	//setATImme("1"); // dont start in WORK mode out of reset
 	//sendATStart();
+<<<<<<< HEAD
 	//sendATDisc(); // let master discover peripherals
 
 	for(int i = 0; i < 256; i++)
@@ -49,6 +55,16 @@ int main(void)
 	}
 
 
+=======
+//	sendATDisc(); // let master discover peripherals
+
+	char startBuff[256] = {};
+	for(uint32_t i = 0; i < 256; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		startBuff[i] = USART4 -> RDR;
+	}
+>>>>>>> 4d2af454ef6cea91f6e97b731f0a21b01a5a459c
 }
 
 void sendATStart()
