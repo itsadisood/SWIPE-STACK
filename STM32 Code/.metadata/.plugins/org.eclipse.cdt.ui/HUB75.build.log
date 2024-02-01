@@ -1,0 +1,6 @@
+17:15:54 **** Incremental Build of configuration Debug for project HUB75 ****
+make -j7 all 
+make: Nothing to be done for `all'.
+
+17:15:55 Build Finished (took 288ms)
+

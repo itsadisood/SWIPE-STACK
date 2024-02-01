@@ -1,0 +1,66 @@
+/**
+  ******************************************************************************
+  * @file    main.c
+  * @author  Vishnu Lagudu
+  * @version V1.0
+  * @date    01-December-2013
+  * @brief   Default main function.
+  ******************************************************************************
+*/
+
+
+#include "stm32f0xx.h"
+
+// user defined functions
+void inita (void);
+void nano_wait (unsigned int n);
+
+int main(void)
+{
+	// initialize the GPIO ports
+	inita;
+
+	// set the Blank Pin high
+	GPIOA -> BSRR = 0x1 << 13;
+
+	// set the color to white
+	GPIOA -> BSRR = 0x3f;
+
+	// set address to the first row
+	GPIOA -> BRR  = 0x1f << 6;
+
+	// clock the CLK of the LED matrix
+	nano_wait (5000000);
+	GPIOA -> BSRR = 0x1 << 11;
+	nano_wait (5000000);
+	GPIOA -> BRR = 0x1 << 11;
+
+	// latch the row
+	nano_wait (5000000);
+	GPIOA -> BSRR = 0x1 << 12;
+	nano_wait (5000000);
+	GPIOA -> BRR = 0x1 << 12;
+
+	// set the Blank Pin low
+	GPIOA -> BRR = 0x1 << 13;
+
+	for(;;);
+}
+
+// (inline asm to waste time
+void nano_wait(unsigned int n) {
+    asm(    "        mov r0,%0\n"
+            "repeat: sub r0,#83\n"
+            "        bgt repeat\n" : : "r"(n) : "r0", "cc");
+}
+
+// Function to initialize GPIOA ports (0 - 13)
+// for outputs to LED Dot Matrix
+void inita (void)
+{
+	// Start the RCC clock
+	RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;
+
+	GPIOA -> MODER &= 0xf0000000;
+	GPIOA -> MODER |= 0x05555555;
+}
