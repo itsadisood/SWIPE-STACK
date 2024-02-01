@@ -8,15 +8,13 @@
   ******************************************************************************
 */
 
-
 #include "stm32f0xx.h"
+#include "BNO08x.h" // library for IMU functions
 #include <stdint.h>
 
-void toggle_IMU_RST(uint8_t num);
-void toggle_NSS(uint8_t num);
 extern void nano_wait(int);
 
-uint8_t tx_cargo[10] = {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08, 0x09, 0x0A};
+uint8_t tx_cargo[6] = {0x00, 0x00, 0x00, 0x0, 0x0, 0x00};
 uint8_t rx_cargo[20] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
 
@@ -38,32 +36,11 @@ void setup_GPIO(void)
 
 	// Perform IMU cleaning
 	toggle_IMU_RST(1);
-	nano_wait(10);
+	nano_wait(10000000); //10ms
 	toggle_IMU_RST(0);
-	toggle_NSS(0);
+	toggle_IMU_NSS(0);
 }
 
-//*********************************************
-// function to assert IMU reset pin (active-low)
-// num == 1 => PB10 becomes 0
-// num == 0 => PB10 becomes 1
-//
-void toggle_IMU_RST(uint8_t num)
-{
-	if(num == 1)
-		GPIOB -> BSRR |= GPIO_BSRR_BR_10;
-	else if(num == 0)
-		GPIOB -> BSRR |= GPIO_BSRR_BS_10;
-}
-
-
-void toggle_NSS(uint8_t num)
-{
-	if(num == 1)
-		GPIOB -> BSRR |= GPIO_BSRR_BR_12;
-	else if(num == 0)
-		GPIOB -> BSRR |= GPIO_BSRR_BS_12;
-}
 
 //**********************************************
 // function to configure SPI2 for use with IMU hub
@@ -76,7 +53,7 @@ void setup_SPI(void)
 	SPI2 -> CR1 |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); // lowest baud rate (48Mhz / 256)
 	SPI2 -> CR2 = SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;    // 8 bit size of data
 	SPI2 -> CR2 |= SPI_CR2_SSOE | SPI_CR2_NSSP; // output enable and nssp enable
-	SPI2 -> CR2 |= SPI_CR2_TXDMAEN |  SPI_CR2_FRXTH; //| SPI_CR2_RXDMAEN | SPI_CR2_RXNEIE ;				// dma transfer on transmit buffer empty
+	SPI2 -> CR2 |= SPI_CR2_TXDMAEN |  SPI_CR2_FRXTH; // dma transfer on transmit buffer empty
 }
 
 //**********************************************
@@ -95,7 +72,6 @@ void setup_DMA_tx(void)
     DMA1_Channel5->CCR &= ~DMA_CCR_MSIZE;   // 8 bit (1B) m size
     DMA1_Channel5->CCR &= ~DMA_CCR_PSIZE;   // 8 bit (1B) p size
     DMA1_Channel5->CCR |= DMA_CCR_MINC;     // increment CMAR
-//    DMA1_Channel5->CCR |= DMA_CCR_CIRC;
 }
 
 ////**********************************************
@@ -116,27 +92,24 @@ void setup_DMA_rx(void)
 	DMA1_Channel4->CCR |= DMA_CCR_MINC;     // increment CMAR
 }
 
-
 void init_exti(void)
 {
 	RCC -> APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;
 	SYSCFG -> EXTICR[2] |=  SYSCFG_EXTICR3_EXTI8_PB;
 	EXTI -> IMR |= EXTI_IMR_MR8;
-	EXTI -> RTSR |= EXTI_RTSR_TR8;
+	EXTI -> FTSR |= EXTI_FTSR_TR8;
 	NVIC -> ISER[0] |= (1 << EXTI4_15_IRQn);
 }
 
 void EXTI4_15_IRQHandler(void) {
-    EXTI -> PR |= EXTI_PR_PR10;
+    EXTI -> PR |= EXTI_PR_PR8;
     EXTI -> IMR &= ~(EXTI_IMR_MR8);
-    toggle_NSS(1);
+    toggle_IMU_NSS(1);
     SPI2 -> CR1 |= SPI_CR1_SPE;
     DMA1_Channel5->CCR |= DMA_CCR_EN;
 	while((DMA1->ISR & DMA_ISR_TCIF5) == 0) {}
 	nano_wait(1000000); //1ms
-	SPI2 -> CR1 &= ~SPI_CR1_SPE;
 	DMA1_Channel5->CCR &= ~DMA_CCR_EN;
-	toggle_NSS(0);
 }
 
 int main(void)
@@ -145,8 +118,9 @@ int main(void)
 	setup_SPI();
 	init_exti();
 	setup_DMA_tx();
-//	setup_DMA_rx();
-
-
+	while(1)
+	{
+			asm("wfi");
+	}
 }
 
