@@ -1,4 +1,4 @@
-17:15:49 **** Incremental Build of configuration Debug for project HUB75 ****
+16:05:38 **** Incremental Build of configuration Debug for project HUB75 ****
 make -j7 all 
 Building file: ../src/main.c
 Invoking: MCU GCC Compiler
@@ -18,6 +18,6 @@ arm-none-eabi-size "HUB75.elf"
    text	   data	    bss	    dec	    hex	filename
    1512	   1080	   1092	   3684	    e64	HUB75.elf
  
-17:15:54 **** Incremental Build of configuration Debug for project HUB75 ****
+16:05:45 **** Incremental Build of configuration Debug for project HUB75 ****
 make -j7 all 
 make: Nothing to be done for `all'.

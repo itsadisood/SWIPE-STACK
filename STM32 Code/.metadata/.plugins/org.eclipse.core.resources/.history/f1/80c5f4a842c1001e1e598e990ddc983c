@@ -10,15 +10,13 @@
 
 
 #include "stm32f0xx.h"
-#include "font.h"
 
 // user defined functions
 void init_io (void);
 void nano_wait (unsigned int n);
 
 
-int
-main(void)
+int main(void)
 {
 	// initialize the GPIO ports
 	init_io ();
@@ -34,7 +32,7 @@ main(void)
 	// set the color to green
 //	GPIOA -> ODR &= ~0xff;
 //	GPIOA -> ODR |= 0x12;
-	GPIOA -> ODR |= 0x5;
+	GPIOA -> ODR |= 0xf;
 
 	// clock the CLK of the LED matrix
 	nano_wait (5000000);
@@ -56,9 +54,7 @@ main(void)
 }
 
 // 	inline asm to waste time
-void
-nano_wait(unsigned int n)
-{
+void nano_wait(unsigned int n) {
     asm("        mov r0,%0\n"
         "repeat: sub r0,#83\n"
         "        bgt repeat\n" : : "r"(n) : "r0", "cc");
@@ -66,8 +62,7 @@ nano_wait(unsigned int n)
 
 // Function to initialize GPIOA ports (0 - 13)
 // for outputs to LED Dot Matrix
-void
-init_io (void)
+void init_io (void)
 {
 	// Start the RCC clock
 	RCC -> AHBENR |= RCC_AHBENR_GPIOAEN;
