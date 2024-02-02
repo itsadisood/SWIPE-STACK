@@ -56,7 +56,7 @@ latch (void)
 void
 clear_disp (void)
 {
-  int offset;
+  int offset, row;
 
   // set the black pin high
   GPIOB -> ODR |= 0x1;
@@ -75,7 +75,7 @@ clear_disp (void)
     
     // set the row address
     GPIOA -> ODR &= ~(0x1f << 6);
-    GPIOA -> ODR |= (rpw << 6);
+    GPIOA -> ODR |= (row << 6);
 
     for (int j = 0; j < HUB75_W; j++)
     {
@@ -94,7 +94,7 @@ clear_disp (void)
 }
 
 void 
-draw_font (int row, int col, int color, Font* font)
+draw_font (int row, int col, int color, Font font)
 {
   int offset;
   
@@ -102,7 +102,7 @@ draw_font (int row, int col, int color, Font* font)
   GPIOB -> ODR |= 0x1;
 
   // Bit bang the font
-  for (int i = 0; i < font->h; i++)
+  for (int i = 0; i < font.h; i++)
   {
     if (row > 0x1f)
     {
@@ -116,12 +116,12 @@ draw_font (int row, int col, int color, Font* font)
 
     // set the row address
     GPIOA -> ODR &= ~(0x1f << 6);
-    GPIOA -> OSR |= (row << 6);
+    GPIOA -> ODR |= (row << 6);
 
-    for (int j = 0; i < font->w; j++)
+    for (int j = 0; i < font.w; j++)
     {
       // set the color
-      if ((font->pmap >> j) & 0x1)
+      if ((font.pmap[i] >> j) & 0x1)
       {
         GPIOA -> ODR |= color << offset;
       }

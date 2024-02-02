@@ -61,7 +61,7 @@ typedef struct _Font
 	const uint8_t* pmap; // pixel map
 } Font;
 
-const Font font[] =
+const Font fonts[] =
 {
 	{5, 7, A},
 	{5, 7, B},
