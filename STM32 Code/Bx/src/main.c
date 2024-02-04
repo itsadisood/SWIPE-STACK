@@ -29,8 +29,8 @@ int main(void)
 //	for(;;);
 
 	setupGPIO(); // Pa0, Pa1 key
-	setupUART(); // utilizing usart4 to communicate with Bx
-//	sendATCheck(); // send AT handshake
+	setupUART(); // utilizing USART5 to communicate with Bx
+	sendATCheck(); // send AT handshake
 	//sendBxWake();  // send random long string to wakeup NOT WORKING
 	//sendATAddr();  // send AT command to get MAC address
 	//sendBxName();  // send AT command to rename
@@ -40,14 +40,15 @@ int main(void)
 	//getATImme();
 	//setATImme("1"); // dont start in WORK mode out of reset
 	//sendATStart();
-//	sendATDisc(); // let master discover peripherals
+	//sendATDisc(); // let master discover peripherals
 
-	char startBuff[256] = {};
-	for(uint32_t i = 0; i < 256; i++)
+	for(int i = 0; i < 256; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		startBuff[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = i;
 	}
+
+
 }
 
 void sendATStart()
@@ -57,14 +58,14 @@ void sendATStart()
 
 	for(uint32_t i = 0; startTx[i] != '\0'; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = startTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = startTx[i];
 	}
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		startRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		startRx[i] = USART5 -> RDR;
 	}
 }
 
@@ -75,14 +76,14 @@ void sendATCon()
 
 	for(uint32_t i = 0; conTx[i] != '\0'; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = conTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = conTx[i];
 	}
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		conRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		conRx[i] = USART5 -> RDR;
 	}
 }
 
@@ -94,14 +95,14 @@ void setATImme(char * mode)
 
 	for(uint32_t i = 0; immeTx[i] != '\0'; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = immeTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = immeTx[i];
 	}
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		immeRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART5 -> RDR;
 	}
 }
 
@@ -111,14 +112,14 @@ void getATImme()
 	char immeRx[8] = {};
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = immeTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = immeTx[i];
 	}
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		immeRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART5 -> RDR;
 	}
 }
 
@@ -129,14 +130,14 @@ void sendATDisc()
 	char discRx[100] = {}; //"OK+DISCS"
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = discTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = discTx[i];
 	}
 
 	for(uint32_t i = 0; i < 100; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		discRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		discRx[i] = USART5 -> RDR;
 	}
 }
 
@@ -148,14 +149,14 @@ void setATRole(char *role)
 
 	for(uint32_t i = 0; roleTx[i] != '\0'; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = roleTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = roleTx[i];
 	}
 
 	for(uint32_t i = 0; i < 8; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_RXNE)){}
-		roleRx[i] = USART4 -> RDR;
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		roleRx[i] = USART5 -> RDR;
 	}
 	//return strcmp(roleRx + 7, role); // broken comparison
 
@@ -169,15 +170,15 @@ int getAdvInterval()
 	// send message to obtain advertising interval
 	for(uint32_t i = 0; advTx[i] != '\0'; i++)
 	{
-		while(!(USART4->ISR & USART_ISR_TXE)){}
-		USART4 -> TDR = advTx[i];
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = advTx[i];
 	}
 
 	// expect "OK+GET:[P]" from Bx
 	for(int i = 0; i < 8; i++)
 	{
-		while (!(USART4->ISR & USART_ISR_RXNE)) {}
-		advRx[i] = USART4->RDR;
+		while (!(USART5->ISR & USART_ISR_RXNE)) {}
+		advRx[i] = USART5->RDR;
 	}
 	return (uint32_t) advRx[7];
 }
@@ -191,14 +192,14 @@ void sendBxName()
 	  // send "AT" test command
 	  for(uint32_t i = 0; nameTx[i] != '\0'; i++)
 	  {
-		  while(!(USART4->ISR & USART_ISR_TXE)){}
-		  USART4 -> TDR = nameTx[i];
+		  while(!(USART5->ISR & USART_ISR_TXE)){}
+		  USART5 -> TDR = nameTx[i];
 	  }
 
 	  for(int i = 0; i < 14; i++)
 	  	{
-	  		while (!(USART4->ISR & USART_ISR_RXNE)) {}
-	  		nameRx[i] = USART4->RDR;
+	  		while (!(USART5->ISR & USART_ISR_RXNE)) {}
+	  		nameRx[i] = USART5->RDR;
 	  	}
 	  char *temp = strchr(nameRx, 'T');
 	  return strcmp(RX_NAME_R, temp);
@@ -217,15 +218,15 @@ void sendBxWake()
 	  // send "AT" test command
 	  for(uint32_t i = 0; i < 1001; i++)
 	  {
-		  while(!(USART4->ISR & USART_ISR_TXE)){}
-		  USART4 -> TDR = wakeTx[i];
+		  while(!(USART5->ISR & USART_ISR_TXE)){}
+		  USART5 -> TDR = wakeTx[i];
 	  }
 
 	  // expect "OK" from Bx
 	  for(int i = 0; i < 7; i++)
 	  {
-		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
-		  wakeRx[i] = USART4->RDR;
+		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
+		  wakeRx[i] = USART5->RDR;
 	  }
 	  return 0;
 }
@@ -237,15 +238,15 @@ void sendATAddr()
 
 	  // send "AT+Addr?" command
 	  for(uint32_t i = 0; i < 8; i++){
-		  while(!(USART4->ISR & USART_ISR_TXE)){}
-		  USART4 -> TDR = testAddrTx[i];
+		  while(!(USART5->ISR & USART_ISR_TXE)){}
+		  USART5 -> TDR = testAddrTx[i];
 	  }
 
 	  // expect "OK+Mac Addr" from Bx
 	  for(int i = 0; i < 19; i++)
 	  {
-		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
-		  testAddrRx[i] = USART4->RDR;
+		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
+		  testAddrRx[i] = USART5->RDR;
 	  }
 	  char *temp = strchr(testAddrRx, 'E'); // extract MAC addr
 	  return strcmp(RX_MACADDR_R, temp);
@@ -258,39 +259,39 @@ void sendATCheck()
 
 	  // send "AT" test command
 	  for(uint32_t i = 0; i < 2; i++){
-		  while(!(USART4->ISR & USART_ISR_TXE)){}
-		  USART4 -> TDR = testTX[i];
+		  while(!(USART5->ISR & USART_ISR_TXE)){}
+		  USART5 -> TDR = testTX[i];
 	  }
 
 	  // expect "OK" from Bx
 	  for(int i = 0; i < 2; i++)
 	  {
-		  while (!(USART4->ISR & USART_ISR_RXNE)) {}
-		  testRX[i] = USART4->RDR;
+		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
+		  testRX[i] = USART5->RDR;
 	  }
 	  return strcmp(testRX, "OK");
 }
 
 void setupGPIO(){
-	RCC -> AHBENR |= RCC_AHBENR_GPIOAEN;                    // Enable GPIO clock
-	GPIOA -> MODER |= GPIO_MODER_MODER0_1; 					// PA0 is TX to Bluetooth (Alt Mode)
-	GPIOA -> AFR[0] |= 0x4;								 	// PA0 selected for USART4_TX
-	GPIOA -> MODER |= GPIO_MODER_MODER1_1; 					// PA1 is RX from Bluetooth (Alt Mode)
-	GPIOA -> AFR[0] |= 0x4 << 4; 							// PA0 selected for USART4_RX
+	RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;                    // Enable GPIO clock
+	GPIOB -> MODER |= GPIO_MODER_MODER3_1; 					// PB3 is TX to Bluetooth (Alt Mode)
+	GPIOB -> AFR[0] |= 0x4 << 12;								 	// PB3 selected for USART5_TX
+	GPIOB -> MODER |= GPIO_MODER_MODER4_1; 					// PB4 is RX from Bluetooth (Alt Mode)
+	GPIOB -> AFR[0] |= 0x4 << 16; 							// PB4 selected for USART5_RX
 }
 
 void setupUART(){
-	RCC -> APB1ENR |= RCC_APB1ENR_USART4EN;                // clock on for usart4
-	USART4 -> CR1 &= ~USART_CR1_UE;                        // turn off for config
-	USART4 -> CR1 &= ~USART_CR1_M;                         // 8 bit word length
-	USART4 -> CR2 &= ~USART_CR2_STOP;                      // 1 stop bits
-	USART4 -> CR1 &= ~USART_CR1_PCE;                       // parity disable
-	USART4 -> CR1 &= ~USART_CR1_OVER8;                     // 16x oversampling
-	USART4 -> BRR = 48000000 / 9600;					   // 9600 baud rate
-	USART4 -> CR1 |= USART_CR1_TE;				           // transmitter enable
-	USART4 -> CR1 |= USART_CR1_RE;				           // receiver enable
-	USART4 -> CR1 |= USART_CR1_UE;                         // enable usart
+	RCC -> APB1ENR |= RCC_APB1ENR_USART5EN;                // clock on for USART5
+	USART5 -> CR1 &= ~USART_CR1_UE;                        // turn off for config
+	USART5 -> CR1 &= ~USART_CR1_M;                         // 8 bit word length
+	USART5 -> CR2 &= ~USART_CR2_STOP;                      // 1 stop bits
+	USART5 -> CR1 &= ~USART_CR1_PCE;                       // parity disable
+	USART5 -> CR1 &= ~USART_CR1_OVER8;                     // 16x oversampling
+	USART5 -> BRR = 48000000 / 9600;					   // 9600 baud rate
+	USART5 -> CR1 |= USART_CR1_TE;				           // transmitter enable
+	USART5 -> CR1 |= USART_CR1_RE;				           // receiver enable
+	USART5 -> CR1 |= USART_CR1_UE;                         // enable usart
 
-	while(!(((USART4 -> ISR) & USART_ISR_TEACK) && ((USART4 -> ISR) & USART_ISR_REACK))); // wait for TEACK and REACK to be set
+	while(!(((USART5 -> ISR) & USART_ISR_TEACK) && ((USART5 -> ISR) & USART_ISR_REACK))); // wait for TEACK and REACK to be set
 }
 

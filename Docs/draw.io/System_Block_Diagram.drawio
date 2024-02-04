@@ -1,0 +1,280 @@
+<mxfile host="app.diagrams.net" modified="2024-02-03T06:12:53.404Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36" etag="qp76T0xlwKlgOeZ6Gv3n" version="23.0.2" type="google">
+  <diagram name="Page-1" id="Jk7Gx7HHeYHZvHwmlr8a">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="2000" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="4dbW64TmokZdM3HhzPT6-72" value="" style="group" connectable="0" vertex="1" parent="1">
+          <mxGeometry x="600" y="60" width="1310" height="870" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-1" value="Hub Microcontroller (STM32F091)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99E4FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="850" y="480" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-4" value="32 x 64 RGB LED Dot Matrix Display" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#99E4FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="1120" y="315" width="190" height="450" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-7" value="&lt;b&gt;GPIO&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="1030" y="520" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-9" value="HM19 Bluetooth Receiver (LEFT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99E4FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="850" y="280" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-10" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-1" target="4dbW64TmokZdM3HhzPT6-9">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="880" y="450" as="sourcePoint" />
+            <mxPoint x="930" y="400" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-11" value="HM19 Bluetooth Receiver (RIGHT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99E4FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="850" y="680" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-12" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0.5;entryY=1;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-11" target="4dbW64TmokZdM3HhzPT6-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="924.71" y="670" as="sourcePoint" />
+            <mxPoint x="924.71" y="590" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-13" value="&lt;b&gt;UART&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="920" y="620" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-14" value="&lt;b&gt;UART&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="930" y="420" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-15" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-1" target="4dbW64TmokZdM3HhzPT6-4">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1000" y="545" as="sourcePoint" />
+            <mxPoint x="1050" y="495" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-16" value="LMR544 Buck Converter IC Circuit" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#99E4FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="690" y="90" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-17" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="1220" y="840" as="sourcePoint" />
+            <mxPoint x="1220" y="765" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-18" value="&lt;b&gt;5 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="1190" y="840" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-19" value="" style="endArrow=classic;html=1;rounded=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="760.4300000000001" y="20" as="sourcePoint" />
+            <mxPoint x="760" y="90" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-20" value="&lt;b&gt;5 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="730" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-21" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-9">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="760" y="210" as="sourcePoint" />
+            <mxPoint x="848" y="338" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="760" y="340" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-23" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="760" y="340" as="sourcePoint" />
+            <mxPoint x="810" y="290" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="760" y="540" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-24" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-11">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="760" y="540" as="sourcePoint" />
+            <mxPoint x="810" y="490" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="760" y="740" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-25" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="750" y="210" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-26" value="Glove Microcontroller (STM32F091) (LEFT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="260" y="310" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-27" value="HM19 Bluetooth Transmitter (LEFT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="520" y="310" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-28" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-26" target="4dbW64TmokZdM3HhzPT6-27">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470" y="420" as="sourcePoint" />
+            <mxPoint x="510" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-29" value="&lt;b&gt;UART&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="440" y="345" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-30" value="BNO085 IMU (LEFT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry y="310" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-31" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-30" target="4dbW64TmokZdM3HhzPT6-26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="370" as="sourcePoint" />
+            <mxPoint x="250" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-32" value="&lt;b&gt;SPI&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="170" y="345" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-33" value="S9V11x Buck/Boost Voltage Regulator IC Circuit (LEFT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="260" y="90" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-36" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-33" target="4dbW64TmokZdM3HhzPT6-26">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="210" as="sourcePoint" />
+            <mxPoint x="390" y="160" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-37" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="330" y="210" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-38" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-27">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="250" as="sourcePoint" />
+            <mxPoint x="390" y="210" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="595" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-39" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-30">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="250" as="sourcePoint" />
+            <mxPoint x="270" y="240" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="75" y="250" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-40" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="330" y="280" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-41" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="530" y="280" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-42" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="70" y="280" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-43" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="790" y="310" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-44" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="790" y="510" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-45" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="790" y="710" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-47" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;dashPattern=8 8;strokeColor=#1900FF;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-27" target="4dbW64TmokZdM3HhzPT6-9">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="500" y="375" as="sourcePoint" />
+            <mxPoint x="710" y="370" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-48" value="&lt;b&gt;&lt;font color=&quot;#1900ff&quot;&gt;BLE&lt;/font&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="720" y="340" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-49" value="Glove Microcontroller (STM32F091) (RIGHT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="260" y="710" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-50" value="HM19 Bluetooth Transmitter (RIGHT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="520" y="710" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-51" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-49" target="4dbW64TmokZdM3HhzPT6-50">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="470" y="820" as="sourcePoint" />
+            <mxPoint x="510" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-52" value="&lt;b&gt;UART&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="440" y="745" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-53" value="BNO085 IMU (RIGHT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry y="710" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-54" value="" style="endArrow=classic;startArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-53" target="4dbW64TmokZdM3HhzPT6-49">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="160" y="770" as="sourcePoint" />
+            <mxPoint x="250" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-55" value="&lt;b&gt;SPI&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="170" y="745" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-56" value="S9V11x Buck/Boost Voltage Regulator IC Circuit (RIGHT)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#9C99FF;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="260" y="490" width="150" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-59" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-56" target="4dbW64TmokZdM3HhzPT6-49">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="340" y="610" as="sourcePoint" />
+            <mxPoint x="390" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-60" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="330" y="610" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-61" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-50">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="650" as="sourcePoint" />
+            <mxPoint x="390" y="610" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="595" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-62" value="" style="endArrow=classic;html=1;rounded=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-53">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="330" y="650" as="sourcePoint" />
+            <mxPoint x="270" y="640" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="75" y="650" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-63" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="330" y="680" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-64" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="530" y="680" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-65" value="&lt;b&gt;3.3 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="70" y="680" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-66" value="" style="endArrow=classic;html=1;rounded=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;dashed=1;dashPattern=8 8;strokeColor=#1900FF;entryX=0;entryY=0.75;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" source="4dbW64TmokZdM3HhzPT6-50" target="4dbW64TmokZdM3HhzPT6-11">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="500" y="775" as="sourcePoint" />
+            <mxPoint x="710" y="770" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-67" value="&lt;b&gt;&lt;font color=&quot;#1900ff&quot;&gt;BLE&lt;/font&gt;&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="720" y="740" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-68" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72" target="4dbW64TmokZdM3HhzPT6-56">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="180" y="550" as="sourcePoint" />
+            <mxPoint x="115" y="560" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-69" value="&lt;b&gt;3.0 to 4.2 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="105" y="535" width="65" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-70" value="" style="endArrow=classic;html=1;rounded=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" edge="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="180" y="145" as="sourcePoint" />
+            <mxPoint x="260" y="145" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="4dbW64TmokZdM3HhzPT6-71" value="&lt;b&gt;3.0 to 4.2 V&lt;/b&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=top;whiteSpace=wrap;rounded=0;" vertex="1" parent="4dbW64TmokZdM3HhzPT6-72">
+          <mxGeometry x="105" y="130" width="65" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
