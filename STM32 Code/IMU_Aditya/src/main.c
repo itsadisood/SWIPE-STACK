@@ -12,11 +12,8 @@
 #include "BNO08x.h" // library for IMU functions
 #include <stdint.h>
 
-extern void nano_wait(int);
-
-uint8_t tx_cargo[6] = {0x00, 0x00, 0x00, 0x0, 0x0, 0x00};
-uint8_t rx_cargo[20] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-						0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+uint8_t tx_cargo[300];
+uint8_t rx_cargo[300];
 
 //**********************************************
 // function to configure GPIO as needed
@@ -35,16 +32,13 @@ void setup_GPIO(void)
 	GPIOB -> AFR[1] &= ~ (GPIO_AFRH_AFR13 & GPIO_AFRH_AFR14 & GPIO_AFRH_AFR15);
 
 	// Perform IMU cleaning
-	toggle_IMU_RST(1);
+	toggle_RST(1);
 	nano_wait(10000000); //10ms
-	toggle_IMU_RST(0);
-	toggle_IMU_NSS(0);
+	toggle_RST(0);
+	toggle_NSS(0);
 }
 
 
-//**********************************************
-// function to configure SPI2 for use with IMU hub
-//
 void setup_SPI(void)
 {
 	RCC -> APB1ENR |= RCC_APB1ENR_SPI2EN;       // enable spi2 clock
@@ -53,43 +47,8 @@ void setup_SPI(void)
 	SPI2 -> CR1 |= (SPI_CR1_BR_0 | SPI_CR1_BR_1 | SPI_CR1_BR_2); // lowest baud rate (48Mhz / 256)
 	SPI2 -> CR2 = SPI_CR2_DS_0 | SPI_CR2_DS_1 | SPI_CR2_DS_2;    // 8 bit size of data
 	SPI2 -> CR2 |= SPI_CR2_SSOE | SPI_CR2_NSSP; // output enable and nssp enable
-	SPI2 -> CR2 |= SPI_CR2_TXDMAEN |  SPI_CR2_FRXTH; // dma transfer on transmit buffer empty
-}
-
-//**********************************************
-// function to setup DMA Channel 5 (used for TX data over SPI2)
-//
-void setup_DMA_tx(void)
-{
-    RCC -> AHBENR |= RCC_AHBENR_DMA1EN;     // clock of dma1 on
-
-	// DMA Channel 5 puts data on TX buffer of SPI2
-    DMA1_Channel5->CCR &= ~DMA_CCR_EN;      // turn off enable bit
-    DMA1_Channel5->CMAR = (uint32_t) tx_cargo;    // cmar address (read from here)
-    DMA1_Channel5->CPAR = (uint32_t) &(SPI2->DR); // cpar address (read to here)
-    DMA1_Channel5->CNDTR = 10;              // number of bytes to transfer
-    DMA1_Channel5->CCR |= DMA_CCR_DIR;      // read from mem
-    DMA1_Channel5->CCR &= ~DMA_CCR_MSIZE;   // 8 bit (1B) m size
-    DMA1_Channel5->CCR &= ~DMA_CCR_PSIZE;   // 8 bit (1B) p size
-    DMA1_Channel5->CCR |= DMA_CCR_MINC;     // increment CMAR
-}
-
-////**********************************************
-//// function to setup DMA Channel 4 (used for RX data over SPI2)
-////
-void setup_DMA_rx(void)
-{
-	RCC -> AHBENR |= RCC_AHBENR_DMA1EN;	// clock of dma2 on
-
-	// DMA Channel 4 pulls data from RX buffer of SPI2
-    DMA1_Channel4->CCR &= ~DMA_CCR_EN;      // turn off enable bit
-	DMA1_Channel4->CMAR = (uint32_t) rx_cargo;    // cmar address (read to here)
-	DMA1_Channel4->CPAR = (uint32_t) &(SPI2->DR); // cpar address (read from here)
-	DMA1_Channel4->CNDTR = 20;              // cndtr set to 8
-	DMA1_Channel4->CCR &= ~DMA_CCR_DIR;     // read from perip
-	DMA1_Channel4->CCR |= DMA_CCR_MSIZE_0;  // 16 bit m size
-	DMA1_Channel4->CCR |= DMA_CCR_PSIZE_0;  // 16 bit p size
-	DMA1_Channel4->CCR |= DMA_CCR_MINC;     // increment CMAR
+	SPI2 -> CR2 |= SPI_CR2_TXDMAEN | SPI_CR2_RXDMAEN;
+	SPI2 -> CR1 |= SPI_CR1_SPE;
 }
 
 void init_exti(void)
@@ -103,24 +62,20 @@ void init_exti(void)
 
 void EXTI4_15_IRQHandler(void) {
     EXTI -> PR |= EXTI_PR_PR8;
-    EXTI -> IMR &= ~(EXTI_IMR_MR8);
-    toggle_IMU_NSS(1);
-    SPI2 -> CR1 |= SPI_CR1_SPE;
-    DMA1_Channel5->CCR |= DMA_CCR_EN;
-	while((DMA1->ISR & DMA_ISR_TCIF5) == 0) {}
-	nano_wait(1000000); //1ms
-	DMA1_Channel5->CCR &= ~DMA_CCR_EN;
+    get_startup_adv(tx_cargo, rx_cargo);
 }
 
 int main(void)
 {
+	memset(tx_cargo, 0, 300);
+	memset(rx_cargo, 0, 300);
 	setup_GPIO();
 	setup_SPI();
 	init_exti();
-	setup_DMA_tx();
+
 	while(1)
 	{
-			asm("wfi");
+		asm("wfi");
 	}
 }
 
