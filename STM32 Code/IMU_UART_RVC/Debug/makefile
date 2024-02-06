@@ -31,10 +31,10 @@ endif
 all: IMU_UART.elf
 
 # Tool invocations
-IMU_UART.elf: $(OBJS) $(USER_OBJS) C:\Users\Aditya\workspace\IMU_UART/LinkerScript.ld
+IMU_UART.elf: $(OBJS) $(USER_OBJS) C:\Users\Aditya\workspace\SWIPE-STACK\STM32\ Code\IMU_UART_RVC/LinkerScript.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU GCC Linker'
-	arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -T"C:/Users/Aditya/workspace/IMU_UART/LinkerScript.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "IMU_UART.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
+	arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -T"C:/Users/Aditya/workspace/SWIPE-STACK/STM32 Code/IMU_UART_RVC/LinkerScript.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "IMU_UART.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
