@@ -18,9 +18,9 @@ main ()
   init_io ();
 
   // clear the display
-  clear_disp ();
+//  clear_disp (BLUE);
 
   // drive the font
-  draw_font (4, 5, WHITE, fonts[0]);
+  draw_font (0, 0, WHITE, fonts[2]);
   
 }

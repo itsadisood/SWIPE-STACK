@@ -11,7 +11,7 @@
 #include "stm32f0xx.h"
 
 #define HUB75_H 64 
-#define HUB75_W 64
+#define HUB75_W 32
 
 // functions
 
@@ -29,7 +29,7 @@ void clock (void);
 void latch (void);
 
 // clear HUB75 display
-void clear_disp (void);
+void fill_disp (uint8_t);
 
 // bit bang font through GPIOA
 void draw_font (int, int, int, Font);
