@@ -73,10 +73,42 @@ enum Channels {
 #define CALIBRATE_ACCEL_GYRO_MAG 4
 #define CALIBRATE_STOP 5
 
+// variables
+uint8_t shtp_header[4];
+uint8_t channel_seq[5];
 
-// functions
-void toggle_IMU_RST(uint8_t num);
-void toggle_IMU_NSS(uint8_t num);
+//********************************
+// GPIO Functions
+//********************************
+void toggle_RST(uint8_t op);
+
+void toggle_NSS(uint8_t op);
+
+void toggle_EXTI(uint8_t op);
+
+void toggle_SPI(uint8_t op);
+
+//*********************************
+// DMA Functions
+//*********************************
+void toggle_DMA_tx(uint8_t op);
+
+void toggle_DMA_rx(uint8_t op);
+
+void setup_DMA_tx(uint8_t* cmar_addr, uint32_t transfer_size);
+
+void setup_DMA_rx(uint8_t* cmar_addr, uint32_t reception_size);
+
+// *****************************
+// SHTP Functions
+// *****************************
+uint8_t* set_header(uint8_t channel_num, uint8_t data_len);
+
+void send_packet(uint8_t* tx_buffer, uint8_t* shtp);
+
+void get_startup_adv(uint8_t* tx_buffer, uint8_t* rx_buffer);
 
 
 #endif
+
+
