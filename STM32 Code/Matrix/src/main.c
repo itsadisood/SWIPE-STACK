@@ -71,8 +71,8 @@ void setupDMA(void* addr) {
 
 void setupTIM2(int freq) {
   int COUNT = 100;
-  int rows = 32;
-  int prescaler = (48000000 / ( freq * COUNT * rows)) - 1 ;
+  int rows = 16;
+  int prescaler = ((48000000 * 100) / ( freq * COUNT * rows)) - 1 ;
   int reload = (COUNT) - 1;
 
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
@@ -125,8 +125,8 @@ void setupTIM2(int freq) {
 void setupTIM17(int freq) {
   int COUNT = 100;
   int SCALE = 64;
-  int rows = 32;
-  int prescaler = (48000000 / ( freq * COUNT * rows)) - 1 ;
+  int rows = 16;
+  int prescaler = ((48000000 * 100) / ( freq * COUNT * rows)) - 1 ;
   int reload = (COUNT * SCALE) - 1;
 
   RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
@@ -148,7 +148,7 @@ void setupTIM17(int freq) {
   TIM17->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
 
   //set CCR to
-  TIM17->CCR1 = (COUNT - (SCALE));
+  TIM17->CCR1 = (COUNT - (SCALE / 10));
 
   TIM17->BDTR |= TIM_BDTR_MOE;
 
@@ -156,21 +156,6 @@ void setupTIM17(int freq) {
   TIM17->CCER |= TIM_CCER_CC1E;
 
 
-}
-
-void setup_serial(void)
-{
-    RCC->AHBENR |= 0x00180000;
-    GPIOC->MODER  |= 0x02000000;
-    GPIOC->AFR[1] |= 0x00020000;
-    GPIOD->MODER  |= 0x00000020;
-    GPIOD->AFR[0] |= 0x00000200;
-    RCC->APB1ENR |= 0x00100000;
-    USART5->CR1 &= ~0x00000001;
-    USART5->CR1 |= 0x00008000;
-    USART5->BRR = 0x340;
-    USART5->CR1 |= 0x0000000c;
-    USART5->CR1 |= 0x00000001;
 }
 
 
@@ -203,27 +188,30 @@ int main(void)
 
   int red, green, blue;
 
-  int column = 16;
-  int row = 64;
+  int row = 16;
+  int column = 64;
 
 int index = 0;
-for(int i = 0; i < column; i++) {
-  for(int j = 0; j < row; j++){
-    index = (i*row) + j;
+//setup rows
+
+for(int i = 0; i < row; i++) {
+  for(int j = 0; j < column; j++){
+
+    index = (i*column) + j;
     if(i % 3 == 0){
-      screen[index].red = 3;
-      screen[index].green = 3;
+      screen[index].red = 0;
+      screen[index].green = 0;
       screen[index].blue = 3;
     }
     else if (i % 2 == 0) {
-      screen[index].red = 3;
+      screen[index].red = 0;
       screen[index].green = 3;
-      screen[index].blue = 3;
+      screen[index].blue = 0;
     }
     else{
       screen[index].red = 3;
-      screen[index].green = 3;
-      screen[index].blue = 3;
+      screen[index].green = 0;
+      screen[index].blue = 0;
     }
 
     screen[index].row = i;
