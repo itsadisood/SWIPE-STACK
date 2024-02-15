@@ -22,7 +22,21 @@ typedef struct pixel{
   unsigned int row : 5;
 }pixel;
 
+void drawShape(pixel* screen, pixel* shape, int x, int y, int locx, int locy){
+  int screenIndex = 0;
+  int shapeIndex = 0;
 
+
+  for(int i = 0; i < x; i++) {
+    for(int j = 0; j < y; j++) {
+      shapeIndex = (i * x) + y;
+      screenIndex = ((i * x) * 64) + (j + y);
+      screen[screenIndex].red = shape[shapeIndex].red;
+      screen[screenIndex].green = shape[shapeIndex].green;
+      screen[screenIndex].blue = shape[shapeIndex].blue;
+    }
+  }
+}
 void wait(int size ){
   for(int i = 0; i < size * 10000; i++){
   }
@@ -72,7 +86,7 @@ void setupDMA(void* addr) {
 void setupTIM2(int freq) {
   int COUNT = 100;
   int rows = 16;
-  int prescaler = ((48000000 * 100) / ( freq * COUNT * rows)) - 1 ;
+  int prescaler = ((48000000) / ( freq * COUNT * rows)) - 1 ;
   int reload = (COUNT) - 1;
 
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
@@ -126,7 +140,7 @@ void setupTIM17(int freq) {
   int COUNT = 100;
   int SCALE = 64;
   int rows = 16;
-  int prescaler = ((48000000 * 100) / ( freq * COUNT * rows)) - 1 ;
+  int prescaler = ((48000000) / ( freq * COUNT * rows)) - 1 ;
   int reload = (COUNT * SCALE) - 1;
 
   RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
@@ -134,9 +148,11 @@ void setupTIM17(int freq) {
 
   //set gpio b9 to output alternate function
   GPIOB->MODER |= GPIO_MODER_MODER9_1;
+  GPIOB->MODER |= GPIO_MODER_MODER7_1;
 
   //set AFR for pin 1 to the value 2
   GPIOB->AFR[1] |= 0x2 << 4;
+  GPIOB->AFR[0] |= 0x2 << (4 * 7);
 
   //set prescaler
   TIM17->PSC = prescaler;
@@ -148,12 +164,13 @@ void setupTIM17(int freq) {
   TIM17->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
 
   //set CCR to
-  TIM17->CCR1 = (COUNT - (SCALE / 10));
+  TIM17->CCR1 = (COUNT - (SCALE));
 
   TIM17->BDTR |= TIM_BDTR_MOE;
 
   //enable channel
   TIM17->CCER |= TIM_CCER_CC1E;
+  TIM17->CCER |= TIM_CCER_CC1NE;
 
 
 }
@@ -162,7 +179,17 @@ void setupTIM17(int freq) {
 int main(void)
 {
   pixel* screen = malloc(sizeof(pixel) * 16 * 64);
-  int freq = 1;
+  pixel* square = malloc(sizeof(pixel) * 8 * 8);
+
+  for(int i = 0; i < 8; i++){
+    for(int j = 0; j < 8; j++){
+      square[(i*8)+j].red = 3;
+      square[(i*8)+j].blue = 3;
+      square[(i*8)+j].green = 3;
+    }
+  }
+
+  int freq = 10000;
 
   setupTIM2(freq);
   setupTIM17(freq);
@@ -198,7 +225,7 @@ for(int i = 0; i < row; i++) {
   for(int j = 0; j < column; j++){
 
     index = (i*column) + j;
-    if(i % 3 == 0){
+    if(i % 2 == 0){
       screen[index].red = 0;
       screen[index].green = 0;
       screen[index].blue = 3;
@@ -231,6 +258,30 @@ for(int i = 0; i < 2048; i++){
 
 setupDMA(screen);
 
+//while(1) {
+//  for(int j = 0; j < 4; j++){
+//    nanoWait(1000);
+//    for(int i = 0; i < 1024; i++) {
+//      if(j % 3 == 0){
+//        screen[i].red = 0;
+//        screen[i].green = 0;
+//        screen[i].blue = 3;
+//      }
+//      else if (j % 2 == 0) {
+//        screen[i].red = 0;
+//        screen[i].green = 3;
+//        screen[i].blue = 0;
+//      }
+//      else{
+//        screen[i].red = 3;
+//        screen[i].green = 0;
+//        screen[i].blue = 0;
+//      }
+//    }
+//  }
+//}
+
+drawShape(screen, square, 8, 8, 0,0);
 
 volatile int l = 1;
 int j = 0;
