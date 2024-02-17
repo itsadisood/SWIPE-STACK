@@ -15,11 +15,12 @@
 #include "stdarg.h"
 
 typedef struct pixel{
+  unsigned int spacer : 1;
   unsigned int red : 2;
   unsigned int green : 2;
   unsigned int blue : 2;
   unsigned int latch : 1;
-  unsigned int deadSpace : 4;
+  unsigned int deadSpace : 3;
   unsigned int row : 5;
 }pixel;
 
@@ -84,11 +85,11 @@ void setupDMA(void* addr) {
 
 }
 
-void setupTIM2(int scaler) {
+void setupTIM2(uint32_t psc, uint32_t arr, uint32_t ccr) {
   //prescaler to 1,000 so we get 48,000 hz out
-  int prescaler =  (0x03E8/scaler) - 1;
+  uint32_t prescaler =  psc;//(0x03E8/scaler) - 1;
   //reload to 100 so we get 480 hz out
-  int reload = (100) - 1;
+  uint32_t reload = arr;//(100) - 1;
 
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -100,6 +101,8 @@ void setupTIM2(int scaler) {
   GPIOB->MODER |= GPIO_MODER_MODER4_0;
   GPIOB->MODER |= GPIO_MODER_MODER5_0;
   GPIOB->MODER |= GPIO_MODER_MODER6_0;
+  GPIOB->MODER |= GPIO_MODER_MODER7_0;
+  GPIOB->MODER |= GPIO_MODER_MODER8_0;
   GPIOB->MODER |= GPIO_MODER_MODER11_0;
   GPIOB->MODER |= GPIO_MODER_MODER12_0;
   GPIOB->MODER |= GPIO_MODER_MODER13_0;
@@ -112,7 +115,7 @@ void setupTIM2(int scaler) {
 
 
   //set AFR for pin 1 to the value 2
-  GPIOB->AFR[1] |= 0x2 << 8;
+  GPIOB->AFR[1] |= 0x2 << (4 * 2);
 
   //set prescaler
   //TIM3->PSC |= TIM_PSC_PSC;
@@ -124,21 +127,69 @@ void setupTIM2(int scaler) {
   //set dir
   TIM2->CR1 &= ~TIM_CR1_DIR;
 
-  //set OCcM to 110
-  TIM2->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR1_OC1M_0;
+  //set OCcM to 111 PWM mode 2
+  TIM2->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR2_OC3M_0;
 
   //set CCR to
-  TIM2->CCR3 = (reload + 1) / 2;
+  TIM2->CCR3 = ccr;//(reload + 1) / 2;
 
 
   //Enable DMA
   TIM2->DIER |= TIM_DIER_CC3DE;
+
+
+  TIM2->CR2 |= TIM_CR2_MMS_0; /* (1)*/
+  TIM2->SMCR |= /*TIM_SMCR_TS_1 | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 |*/ TIM_SMCR_MSM; /* (2) */
+
 
   //enable channel
   TIM2->CCER |= TIM_CCER_CC3E;
 
 
 }
+
+void setupTIM3(uint32_t psc, uint32_t arr, uint32_t ccr) {
+  //prescaler to 1,000 so we get 48,000 hz out
+  int prescaler =  psc; //(0x03E8/scaler) - 1;
+  //reload to 100 so we get 480 hz out
+  int reload =  arr;//(64 * 100) - 1;
+
+  RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
+  RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+
+  //set gpio b9 to output alternate function
+  GPIOB->MODER &= ~GPIO_MODER_MODER0_0;
+  GPIOB->MODER |= GPIO_MODER_MODER0_1;
+
+  //set AFR for pin 1 to the value 2
+  GPIOB->AFR[0] |= 0x1  << (4 * 0);
+
+  //set prescaler
+  TIM3->PSC = prescaler;
+  TIM3->ARR = reload;
+  TIM3->CCR3 = ccr;
+
+  //set dir
+  TIM3->CR1 &= ~TIM_CR1_DIR;
+
+  //set OCcM to 110
+  TIM3->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR2_OC3M_0;
+
+  //set slave mode
+  TIM3->SMCR |= TIM_SMCR_TS_0  | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;
+
+
+
+  //set UG bit
+
+
+  //enable channel
+  TIM3->CCER |= TIM_CCER_CC3E;
+
+
+}
+
+
 void setupTIM17(int scaler) {
   //prescaler to 1,000 so we get 48,000 hz out
   int prescaler =  (0x03E8/scaler) - 1;
@@ -150,11 +201,11 @@ void setupTIM17(int scaler) {
 
   //set gpio b9 to output alternate function
   GPIOB->MODER |= GPIO_MODER_MODER9_1;
-  GPIOB->MODER |= GPIO_MODER_MODER7_1;
+  //GPIOB->MODER |= GPIO_MODER_MODER7_1;
 
   //set AFR for pin 1 to the value 2
   GPIOB->AFR[1] |= 0x2 << 4;
-  GPIOB->AFR[0] |= 0x2 << (4 * 7);
+  //GPIOB->AFR[0] |= 0x2 << (4 * 7);
 
   //set prescaler
   TIM17->PSC = prescaler;
@@ -191,12 +242,15 @@ int main(void)
     }
   }
 
-  int freq = 1000;
+  int freq = 10;
+  int scaler = 1;
+  //0x03E8/scaler
+  //setup(psc, arr, ccr);
+  setupTIM2(117-1, (2 * scaler) - 1, (2 * scaler) / 2);
+  setupTIM3(1000-1, (128 * scaler) - 1, (scaler*127));
 
-  setupTIM2(freq);
+
   setupTIM17(freq);
-
-
 
 
 
@@ -226,22 +280,30 @@ for(int i = 0; i < row; i++) {
   for(int j = 0; j < column; j++){
 
     index = (i*column) + j;
-    if(i % 2 == 0){
-      screen[index].red = 1;
-      screen[index].green = 0;
-      screen[index].blue = 0;
+     if(j < 10) {
+       screen[index].red = 3;
+       screen[index].green = 1;
+       screen[index].blue = 3;
+     }
+     else{
+      if(i % 3 == 0){
+        screen[index].red = 1;
+        screen[index].green = 0;
+        screen[index].blue = 2;
+      }
+      else if (i % 2 == 0) {
+        screen[index].red = 1;
+        screen[index].green = 2;
+        screen[index].blue = 0;
+      }
+      else{
+        screen[index].red = 0;
+        screen[index].green = 1;
+        screen[index].blue = 2;
+      }
     }
-    else if (i % 2 == 0) {
-      screen[index].red = 1;
-      screen[index].green = 0;
-      screen[index].blue = 0;
-    }
-    else{
-      screen[index].red = 0;
-      screen[index].green = 1;
-      screen[index].blue = 0;
-    }
-    if(j == 0) {
+
+    if(j == 63) {
       screen[index].latch = 1;
     }
     else{
@@ -252,14 +314,16 @@ for(int i = 0; i < row; i++) {
     red = screen[index].red;
     green = screen[index].green;
     blue = screen[index].blue;
-
-
-
   }
 }
 
+
+TIM2->EGR |= TIM_EGR_UG;
+TIM3->EGR |= TIM_EGR_UG;
+
 TIM2->CR1 |= TIM_CR1_CEN;
-TIM17->CR1 |= TIM_CR1_CEN;
+//TIM3->CR1 |= TIM_CR1_CEN;
+//TIM17->CR1 |= TIM_CR1_CEN;
 
 int arr[64*32];
 
@@ -269,10 +333,10 @@ for(int i = 0; i < 2048; i++){
 
 setupDMA(screen);
 
-//while(1) {
-//  for(int j = 0; j < 4; j++){
-//    nanoWait(1000);
-//    for(int i = 0; i < 1024; i++) {
+while(1) {
+  for(int j = 0; j < 4096; j++){
+    nanoWait(10);
+    for(int i = 0; i < 1024; i++) {
 //      if(j % 3 == 0){
 //        screen[i].red = 0;
 //        screen[i].green = 0;
@@ -288,9 +352,19 @@ setupDMA(screen);
 //        screen[i].green = 0;
 //        screen[i].blue = 0;
 //      }
-//    }
-//  }
-//}
+      if( i == j/4){
+              screen[i].red = 3;
+              screen[i].green = 0;
+              screen[i].blue = 0;
+      }
+      else{
+        screen[i].red = 3;
+        screen[i].green = 3;
+        screen[i].blue = 3;
+      }
+    }
+  }
+}
 
 //drawShape(screen, square, 8, 8, 0,0);
 
