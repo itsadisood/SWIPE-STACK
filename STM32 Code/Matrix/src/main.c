@@ -18,7 +18,8 @@ typedef struct pixel{
   unsigned int red : 2;
   unsigned int green : 2;
   unsigned int blue : 2;
-  unsigned int deadSpace : 5;
+  unsigned int latch : 1;
+  unsigned int deadSpace : 4;
   unsigned int row : 5;
 }pixel;
 
@@ -83,11 +84,11 @@ void setupDMA(void* addr) {
 
 }
 
-void setupTIM2(int freq) {
-  int COUNT = 100;
-  int rows = 16;
-  int prescaler = ((48000000) / ( freq * COUNT * rows)) - 1 ;
-  int reload = (COUNT) - 1;
+void setupTIM2(int scaler) {
+  //prescaler to 1,000 so we get 48,000 hz out
+  int prescaler =  (0x03E8/scaler) - 1;
+  //reload to 100 so we get 480 hz out
+  int reload = (100) - 1;
 
   RCC->APB1ENR |= RCC_APB1ENR_TIM2EN;
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -98,6 +99,7 @@ void setupTIM2(int freq) {
   GPIOB->MODER |= GPIO_MODER_MODER3_0;
   GPIOB->MODER |= GPIO_MODER_MODER4_0;
   GPIOB->MODER |= GPIO_MODER_MODER5_0;
+  GPIOB->MODER |= GPIO_MODER_MODER6_0;
   GPIOB->MODER |= GPIO_MODER_MODER11_0;
   GPIOB->MODER |= GPIO_MODER_MODER12_0;
   GPIOB->MODER |= GPIO_MODER_MODER13_0;
@@ -123,10 +125,11 @@ void setupTIM2(int freq) {
   TIM2->CR1 &= ~TIM_CR1_DIR;
 
   //set OCcM to 110
-  TIM2->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2;
+  TIM2->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR1_OC1M_0;
 
   //set CCR to
-  TIM2->CCR3 = (COUNT) / 2;
+  TIM2->CCR3 = (reload + 1) / 2;
+
 
   //Enable DMA
   TIM2->DIER |= TIM_DIER_CC3DE;
@@ -136,12 +139,11 @@ void setupTIM2(int freq) {
 
 
 }
-void setupTIM17(int freq) {
-  int COUNT = 100;
-  int SCALE = 64;
-  int rows = 16;
-  int prescaler = ((48000000) / ( freq * COUNT * rows)) - 1 ;
-  int reload = (COUNT * SCALE) - 1;
+void setupTIM17(int scaler) {
+  //prescaler to 1,000 so we get 48,000 hz out
+  int prescaler =  (0x03E8/scaler) - 1;
+  //reload to 100 so we get 480 hz out
+  int reload =  (64 * 100) - 1;
 
   RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
   RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
@@ -161,10 +163,10 @@ void setupTIM17(int freq) {
   TIM17->CR1 &= ~TIM_CR1_DIR;
 
   //set OCcM to 110
-  TIM17->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2;
+  TIM17->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2| TIM_CCMR1_OC1M_0;
 
   //set CCR to
-  TIM17->CCR1 = (COUNT - (SCALE));
+  TIM17->CCR1 = ((reload+1) - 64);
 
   TIM17->BDTR |= TIM_BDTR_MOE;
 
@@ -183,18 +185,17 @@ int main(void)
 
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
-      square[(i*8)+j].red = 3;
-      square[(i*8)+j].blue = 3;
-      square[(i*8)+j].green = 3;
+      square[(i*8)+j].red = 1;
+      square[(i*8)+j].blue = 1;
+      square[(i*8)+j].green = 1;
     }
   }
 
-  int freq = 10000;
+  int freq = 1000;
 
   setupTIM2(freq);
   setupTIM17(freq);
-  TIM2->CR1 |= TIM_CR1_CEN;
-  TIM17->CR1 |= TIM_CR1_CEN;
+
 
 
 
@@ -226,19 +227,25 @@ for(int i = 0; i < row; i++) {
 
     index = (i*column) + j;
     if(i % 2 == 0){
-      screen[index].red = 0;
+      screen[index].red = 1;
       screen[index].green = 0;
-      screen[index].blue = 3;
+      screen[index].blue = 0;
     }
     else if (i % 2 == 0) {
-      screen[index].red = 0;
-      screen[index].green = 3;
+      screen[index].red = 1;
+      screen[index].green = 0;
       screen[index].blue = 0;
     }
     else{
-      screen[index].red = 3;
-      screen[index].green = 0;
+      screen[index].red = 0;
+      screen[index].green = 1;
       screen[index].blue = 0;
+    }
+    if(j == 0) {
+      screen[index].latch = 1;
+    }
+    else{
+      screen[index].latch = 0;
     }
 
     screen[index].row = i;
@@ -250,6 +257,10 @@ for(int i = 0; i < row; i++) {
 
   }
 }
+
+TIM2->CR1 |= TIM_CR1_CEN;
+TIM17->CR1 |= TIM_CR1_CEN;
+
 int arr[64*32];
 
 for(int i = 0; i < 2048; i++){
@@ -281,7 +292,7 @@ setupDMA(screen);
 //  }
 //}
 
-drawShape(screen, square, 8, 8, 0,0);
+//drawShape(screen, square, 8, 8, 0,0);
 
 volatile int l = 1;
 int j = 0;
