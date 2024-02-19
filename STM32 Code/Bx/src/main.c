@@ -23,6 +23,11 @@ const char *TX_MACADDR_R = "609866F5B565";
 const char *TX_NAME_R = "GloveR";
 const char *TX_ADVINT_R  = "100ms";
 
+// left glove transmitter characteristics (SLAVE)
+const char *TX_MACADDR_L = "E4E11295D794";
+const char *TX_NAME_L = "GloveL";
+const char *TX_ADVINT_L  = "100ms";
+
 int main(void)
 {
 
@@ -30,17 +35,18 @@ int main(void)
 
 	setupGPIO(); // Pa0, Pa1 key
 	setupUART(); // utilizing USART5 to communicate with Bx
-	sendATCheck(); // send AT handshake
+	//sendATCheck(); // send AT handshake
 	//sendBxWake();  // send random long string to wakeup NOT WORKING
 	//sendATAddr();  // send AT command to get MAC address
 	//sendBxName();  // send AT command to rename
 	//uint32_t adInt = getAdvInterval(); // return advertising interval parameter for module in ms
-	//setATRole("1"); // set to master device
-	sendATCon();
+	//setATRole("0"); // set to master device
+	//sendATCon();
 	//getATImme();
 	//setATImme("1"); // dont start in WORK mode out of reset
 	//sendATStart();
 	//sendATDisc(); // let master discover peripherals
+	//for(;;){}
 
 	for(int i = 0; i < 256; i++)
 	{
@@ -186,7 +192,7 @@ int getAdvInterval()
 void sendBxName()
 {
 	  // set name of bluetooth device
-	  char* nameTx = "AT+NAMETetrisR";
+	  char* nameTx = "AT+NAMEGloveL";
 	  char nameRx[14]  = {};
 
 	  // send "AT" test command
@@ -234,7 +240,7 @@ void sendBxWake()
 void sendATAddr()
 {
 	  uint8_t testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
-	  uint8_t testAddrRx[19] = {};
+	  uint8_t testAddrRx[29] = {};
 
 	  // send "AT+Addr?" command
 	  for(uint32_t i = 0; i < 8; i++){
@@ -243,7 +249,7 @@ void sendATAddr()
 	  }
 
 	  // expect "OK+Mac Addr" from Bx
-	  for(int i = 0; i < 19; i++)
+	  for(int i = 0; i < 29; i++)
 	  {
 		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
 		  testAddrRx[i] = USART5->RDR;
