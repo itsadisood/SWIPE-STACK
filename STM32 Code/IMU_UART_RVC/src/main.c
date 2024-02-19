@@ -13,6 +13,7 @@
 #include "stdlib.h"
 #include "stdarg.h"
 #include "stdint.h"
+#include "stdio.h"
 
 extern void nano_wait(int);
 
@@ -26,10 +27,48 @@ struct Packet
 	float z_acl;
 };
 
+struct Packet curr_packet;
+
 #define FIFOSIZE 19
 uint8_t data_fifo[FIFOSIZE];
 int fifo_offset = 0;
-struct Packet curr_packet;
+
+float convertToFloat(uint8_t lsb, uint8_t msb)
+{
+	int16_t result = ((int16_t)msb << 8) | lsb;
+	int8_t decimal_part = result % 100;
+	int16_t integer_part = result / 100;
+	float final_number = integer_part + (float)decimal_part / 100.0;
+	return final_number;
+}
+
+void printVal()
+{
+	char* output = malloc(sizeof(char) * 70);
+	sprintf(output, "Y:%6.2f, P:%6.2f, R:%6.2f, ",
+//			"X-acl:%6.2f, Y-acl:%6.2f, Z-acl:%6.2f \n\r",
+//			curr_packet.yaw, curr_packet.pitch, curr_packet.roll,
+			curr_packet.x_acl, curr_packet.y_acl, curr_packet.z_acl);
+
+//
+//	sprintf(output, "%6.3f, %6.3f, %6.3f, %6.3f, %6.3f, %6.3f \n",
+//			curr_packet.yaw, curr_packet.pitch, curr_packet.roll,
+//			curr_packet.x_acl, curr_packet.y_acl, curr_packet.z_acl);
+	debugSendString(output);
+	free(output);
+}
+
+void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
+{
+	DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
+	curr_packet.yaw = convertToFloat(data_fifo[3], data_fifo[4]);
+	curr_packet.pitch = convertToFloat(data_fifo[5], data_fifo[6]);
+	curr_packet.roll = convertToFloat(data_fifo[7], data_fifo[8]);
+	curr_packet.x_acl = convertToFloat(data_fifo[9], data_fifo[10]);
+	curr_packet.y_acl = convertToFloat(data_fifo[11], data_fifo[12]);
+	curr_packet.z_acl = convertToFloat(data_fifo[13], data_fifo[14]);
+	printVal();
+}
 
 void debugSend(char txdata) {
   while(!(USART5->ISR & USART_ISR_TXE)){}
@@ -43,7 +82,6 @@ void debugSendString(char* data) {
     i++;
   }
 }
-
 
 void setup_serial(void)
 {
@@ -59,7 +97,6 @@ void setup_serial(void)
     USART5->CR1 |= 0x0000000c;
     USART5->CR1 |= 0x00000001;
 }
-
 
 void setup_IMU_UART(void)
 {
@@ -111,47 +148,18 @@ void printInt(int val, char* pin) {
   free(output);
 }
 
-float convertToFloat(uint8_t lsb, uint8_t msb)
-{
-	int16_t result = ((int16_t)msb << 8) | lsb;
-	int8_t decimal_part = result % 100;
-	int16_t integer_part = result / 100;
-	float final_number = integer_part + (float)decimal_part / 100.0;
-	return final_number;
-}
-
-
-void printVal()
-{	//TODO setup a DMA for this
-	char* output = malloc(sizeof(char) * 100);
-	sprintf(output, "Y:%6.2f, P:%6.2f, R:%6.2f, X-acl:%6.2f, Y-acl:%6.2f, Z-acl:%6.2f \n\r",
-			curr_packet.yaw, curr_packet.pitch, curr_packet.roll, curr_packet.x_acl, curr_packet.y_acl, curr_packet.z_acl);
-	debugSendString(output);
-	free(output);
-}
-
-void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
-{
-	DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
-
-	curr_packet.yaw = convertToFloat(data_fifo[3], data_fifo[4]);
-	curr_packet.pitch = convertToFloat(data_fifo[5], data_fifo[6]);
-	curr_packet.roll = convertToFloat(data_fifo[7], data_fifo[8]);
-	curr_packet.x_acl = convertToFloat(data_fifo[9], data_fifo[10]);
-	curr_packet.y_acl = convertToFloat(data_fifo[11], data_fifo[12]);
-	curr_packet.z_acl = convertToFloat(data_fifo[13], data_fifo[14]);
-	printVal();
-
-}
-
 
 int main(void)
 {
   setup_serial();
   setup_DMA();
   setup_IMU_UART();
-  while(1)
+
+  for(int i = 0; i<10000000;)
   {
-	  asm("wfi");
+	  i++;
   }
 }
+
+
+

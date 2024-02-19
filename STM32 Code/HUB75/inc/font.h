@@ -21,7 +21,7 @@
 
 
 // Pixel maps
-const uint8_t A [] =
+static const uint8_t A [] =
 {
     0b0010000,
     0b0101000,
@@ -32,7 +32,7 @@ const uint8_t A [] =
     0b1000100
 };
 
-const uint8_t B [] =
+static const uint8_t B [] =
 {
     0b1111000,
     0b1000100,
@@ -43,7 +43,7 @@ const uint8_t B [] =
     0b1111000
 };
 
-const uint8_t C [] =
+static const uint8_t C [] =
 {
     0b0111100,
     0b1000000,
@@ -61,7 +61,7 @@ typedef struct _Font
 	const uint8_t* pmap; // pixel map
 } Font;
 
-const Font fonts[] =
+static const Font fonts[] =
 {
 	{5, 7, A},
 	{5, 7, B},
