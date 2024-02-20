@@ -444,7 +444,7 @@
     "last_paths": {
       "gencad": "",
       "idf": "",
-      "netlist": "",
+      "netlist": "../../../../AppData/Local/Programs/KiCad/7.0/",
       "specctra_dsn": "",
       "step": "",
       "vrml": ""
