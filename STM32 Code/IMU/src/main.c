@@ -114,7 +114,7 @@ void EXTI4_15_IRQHandler(void){
   int reads = 0;
   uint8_t temp = 0;
   headerInfo header = {.cargoSize = 0, .channel = 0, .seqNum = 0};
-
+  //set nss low
   GPIOA->BSRR |= GPIO_BSRR_BR_3;
   //read header
   int cargo[4];
@@ -131,7 +131,6 @@ void EXTI4_15_IRQHandler(void){
        }
     }
   }
-
 
   if(cargo[3] == 0){
     header.cargoSize = cargo[0] + (cargo[1]<<8);
@@ -270,11 +269,7 @@ void setup_SPI1(void) {
     //SPI1->CR2 &= ~SPI_CR2_DS_3; //Set data size to 16 bits
 
     SPI1->CR2 |= SPI_CR2_FRXTH; //set RXNE level for 8 bit reads
-
-
     SPI1->CR1 |= SPI_CR1_SPE;
-
-//    NVIC->ISER[0] |= 1 << 7;
 
 }
 void setup_GPIO(void) {

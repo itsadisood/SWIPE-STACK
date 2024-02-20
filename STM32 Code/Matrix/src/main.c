@@ -54,9 +54,7 @@ void setupDMA(void* addr) {
 
   //Set data count for 64 columns by 16 rows each
   DMA1_Channel1->CNDTR = 64 * 16;
-
   DMA1_Channel1->CMAR = (uint32_t) addr;
-
   DMA1_Channel1->CPAR = (uint32_t) (&(GPIOB->ODR));
 
   //set memory access size to 32 bits
@@ -77,12 +75,8 @@ void setupDMA(void* addr) {
   //TIM2 is the default mapping for DMA1 Channel1
   //DMA1->RMPCR |= DMA_RMPCR1_CH3_TIM2;
 
-
   //enable the channel
   DMA1_Channel1->CCR |= DMA_CCR_EN;
-
-
-
 }
 
 void setupTIM2(uint32_t psc, uint32_t arr, uint32_t ccr) {
@@ -133,14 +127,11 @@ void setupTIM2(uint32_t psc, uint32_t arr, uint32_t ccr) {
   //set CCR to
   TIM2->CCR3 = ccr;//(reload + 1) / 2;
 
-
   //Enable DMA
   TIM2->DIER |= TIM_DIER_CC3DE;
 
-
   TIM2->CR2 |= TIM_CR2_MMS_0; /* (1)*/
   TIM2->SMCR |= /*TIM_SMCR_TS_1 | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1 |*/ TIM_SMCR_MSM; /* (2) */
-
 
   //enable channel
   TIM2->CCER |= TIM_CCER_CC3E;
@@ -178,15 +169,8 @@ void setupTIM3(uint32_t psc, uint32_t arr, uint32_t ccr) {
   //set slave mode
   TIM3->SMCR |= TIM_SMCR_TS_0  | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;
 
-
-
-  //set UG bit
-
-
   //enable channel
   TIM3->CCER |= TIM_CCER_CC3E;
-
-
 }
 
 
