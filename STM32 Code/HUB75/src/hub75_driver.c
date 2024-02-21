@@ -26,51 +26,48 @@ init_io (void)
 {
 	// Start the RCC clock for ports A and B
   RCC -> AHBENR |= RCC_AHBENR_GPIOAEN;
-	RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;
+  RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;
   
   // Coinfigure pins to outputs
-	GPIOA -> MODER &= 0xfC000000;
-	GPIOA -> MODER |= 0x01555555;
-	GPIOB -> MODER &= ~0x3;
-	GPIOB -> MODER |= 0x1;
+  GPIOA -> MODER &= 0xfC000000;
+  GPIOA -> MODER |= 0x01555555;
+  GPIOB -> MODER &= ~0x3;
+  GPIOB -> MODER |= 0x1;
 }
 
 void
 clock (void)
 {
-  nano_wait (5000000);
-  GPIOA -> ODR |= 0x1 << 11;
-  nano_wait (5000000);
-  GPIOA -> ODR &= ~(0x1 << 11);
+  GPIOA -> BSRR = 0x1 << 11;
+  GPIOA -> BRR  = (0x1 << 11);
 }
 
 void
 latch (void)
 {
-  nano_wait (5000000);
-  GPIOA -> ODR |= 0x1 << 12;
-  nano_wait (5000000);
-  GPIOA -> ODR &= ~(0x1 << 12);
+//  nano_wait (500);
+  GPIOA -> BSRR = 0x1 << 12;
+//  nano_wait (500);
+  GPIOA -> BRR  = (0x1 << 12);
 }
 
+/*
+ * Function to fill display with a solid color
+ */
 void
-clear_disp (void)
+fill_disp (uint8_t color)
 {
-  int offset, row;
+  int offset, row, i;
 
-  // set the black pin high
-  GPIOB -> ODR |= 0x1;
-
-  for (int i = 0; i < HUB75_H; i++)
+  i = 0;
+  for (;;)
   {
-    if (i > 0x1f)
+	int row = i & 0x3f;
+    offset = 0;
+    if (row > 0x1f)
     {
       offset = 3;
       row    = row & 0x1f;
-    }
-    else
-    {
-      offset = 0;
     }
     
     // set the row address
@@ -79,70 +76,106 @@ clear_disp (void)
 
     for (int j = 0; j < HUB75_W; j++)
     {
-      // clear the screen
-      GPIOA -> ODR &= ~(BLACK << offset);
-
+      GPIOA -> ODR |= color << offset;
       clock ();
     }
 
-    // latch the row
     latch ();
-  }
 
- // set the black pin low
- GPIOB -> ODR &= ~0x1; 
+    GPIOB -> ODR |= 0x1;
+    GPIOB -> ODR &= ~0x1;
+
+    i++;
+  }
 }
 
-void 
-draw_font (int row, int col, int color, Font font)
+void
+writebyte (uint8_t byte, uint8_t color)
 {
-  int offset;
-  
-  // set the blank pin high
-  GPIOB -> ODR |= 0x1;
-
-  // Bit bang the font
-  for (int i = 0; i < font.h; i++)
+  for (int i = 0; i < 64; i++)
   {
-    if (row > 0x1f)
-    {
-      offset = 3;
-      row    = row & 0x1f;
-    }
-    else
-    {
-      offset = 0;
-    }
-
-    // set the row address
-    GPIOA -> ODR &= ~(0x1f << 6);
-    GPIOA -> ODR |= (row << 6);
-
-    for (int j = 0; i < font.w; j++)
-    {
-      // set the color
-      if ((font.pmap[i] >> j) & 0x1)
-      {
-        GPIOA -> ODR |= color << offset;
-      }
-
-      // clock the shift register
-      clock ();
-    }
-    
-    // move to the right colomn
-    for (int k = 0; k < col; k++)
-    {
-      clock ();
-    }
-
-    // latch the row
-    latch ();
-
-    // increment the row address
-    row++;
+	  // set the default to blank
+	  GPIOA -> BRR = (0x3f);
+	  if (i < 8)
+	  {
+		  GPIOA -> BRR = (0x3f);
+		  if (byte & 0x80)
+		  {
+			  // if pixel present set to a color
+			  GPIOA -> BSRR = color;
+		  }
+		  // change the pixel at msb
+		  byte<<=1;
+	  }
+	  // clock in pixel by pixel
+	  clock ();
   }
-  // set the blank pin low
-  GPIOB -> ODR &= ~0x1;
+}
+
+void
+showchar (uint8_t row, uint8_t color, uint8_t* char_map)
+{
+	uint8_t offset = 0;
+	for (int i = 0; i < 8; i++)
+	{
+		// wrap the row
+		if (row > 15)
+		{
+			row    = row & 0xf;
+			offset = 3;
+		}
+		// Enable blank
+//		GPIOB -> BSRR = 0x1;
+		// set the row index
+		GPIOA -> BRR  = (0x1f << 6);
+		GPIOA -> BSRR = (row << 6);
+		// write byte
+		writebyte (char_map[i], color << offset);
+		// latch the row
+		GPIOB -> BSRR = 0x1;
+		latch ();
+		// disable blank
+		GPIOB -> BRR = 0x1;
+		// wait to increase duty cycle
+		nano_wait(50000 - 34000);
+//		nano_wait(5000000 -3400000);
+		// decrement the row index
+		row--;
+	}
+}
+
+void setup_dma (void* addr)
+{
+	RCC->AHBENR |= RCC_AHBENR_DMAEN;
+	// Total size of trnasfer
+	DMA1_Channel1->CNDTR = 64 * 16;
+	// memory address
+	DMA1_Channel1->CMAR = (uint32_t) addr;
+	// Peripheral Destination
+	DMA1_Channel1->CPAR = (uint32_t) (&(GPIOB->ODR));
+	//set memory access size to 32 bits
+	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_1;
+
+  //set peripheral access size to 16 bits
+  DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0;
+
+  //set minc to 1 and pinc to 0
+  DMA1_Channel1->CCR &= ~DMA_CCR_PINC;
+  DMA1_Channel1->CCR |= DMA_CCR_MINC;
+
+  //set to circular
+  DMA1_Channel1->CCR |= DMA_CCR_CIRC;
+  //set to mem to peripheral direction
+  DMA1_Channel1->CCR |= DMA_CCR_DIR;
+
+  //TIM2 is the default mapping for DMA1 Channel1
+  //DMA1->RMPCR |= DMA_RMPCR1_CH3_TIM2;
+
+
+  //enable the channel
+  DMA1_Channel1->CCR |= DMA_CCR_EN;
+
+
+
 }
 
