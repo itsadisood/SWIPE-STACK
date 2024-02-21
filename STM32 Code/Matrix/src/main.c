@@ -14,16 +14,51 @@
 #include "stdlib.h"
 #include "stdarg.h"
 
+
 typedef struct pixel{
   unsigned int spacer : 1;
   unsigned int red : 2;
-  unsigned int green : 2;
   unsigned int blue : 2;
+  unsigned int green : 2;
   unsigned int latch : 1;
   unsigned int deadSpace : 3;
   unsigned int row : 5;
 }pixel;
 
+typedef struct pixel4{
+  unsigned int red : 2;
+  unsigned int blue : 2;
+  unsigned int green : 2;
+}pixel4;
+
+void drawColors(pixel4* colorScreen, pixel* screen) {
+  //i is row, j is column
+  int index = 0;
+
+  for(int s = 0; s < 3; s++){
+    for(int i = 0; i < 16; i++){
+      for(int j = 0; j < 64; j++){
+        //find index into screen array
+        index = (i * 64) + j;
+        //              layer offset                          index 0                                               index of (64 * 32) / 2
+        screen[index + (s * 1024)].red   = (0b01 * (colorScreen[index].red   >= (s+1))) + (0b10 * (colorScreen[index + (1024)].red >= (s+1)));
+        screen[index + (s * 1024)].blue  = (0b01 * (colorScreen[index].blue  >= (s+1))) + (0b10 * (colorScreen[index + (1024)].blue  >= (s+1)));
+        screen[index + (s * 1024)].green = (0b01 * (colorScreen[index].green >= (s+1))) + (0b10 * (colorScreen[index + (1024)].green >= (s+1)));
+      }
+    }
+  }
+//  for(int s = 0; s < 3; s++){
+//    for(int i = 0; i < 16; i++) {
+//      for(int j = 0; j < 64; j++){
+//        index = (i*64) + j + (s * 1024);
+//        screen[index].red = 3;
+//        screen[index].green = 3;
+//        screen[index].blue = 3;
+//      }
+//    }
+//  }
+  return;
+}
 void drawShape(pixel* screen, pixel* shape, int x, int y, int locx, int locy){
   int screenIndex = 0;
   int shapeIndex = 0;
@@ -53,7 +88,7 @@ void setupDMA(void* addr) {
   RCC->AHBENR |= RCC_AHBENR_DMAEN;
 
   //Set data count for 64 columns by 16 rows each
-  DMA1_Channel1->CNDTR = 64 * 16;
+  DMA1_Channel1->CNDTR = 64 * 16 * 3;
   DMA1_Channel1->CMAR = (uint32_t) addr;
   DMA1_Channel1->CPAR = (uint32_t) (&(GPIOB->ODR));
 
@@ -215,7 +250,8 @@ void setupTIM17(int scaler) {
 
 int main(void)
 {
-  pixel* screen = malloc(sizeof(pixel) * 16 * 64);
+  volatile pixel* screen = malloc(sizeof(pixel) * 16 * 64 * 3);
+  volatile pixel4* screen4 = malloc(sizeof(pixel4) * 32 * 64);
   pixel* square = malloc(sizeof(pixel) * 8 * 8);
 
   for(int i = 0; i < 8; i++){
@@ -230,12 +266,7 @@ int main(void)
   int scaler = 1;
   //0x03E8/scaler
   //setup(psc, arr, ccr);
-  setupTIM2(117-1, (2 * scaler) - 1, (2 * scaler) / 2);
-  //setupTIM3(1000-1, (128 * scaler) - 1, (scaler*127));
-
-
-  setupTIM17(freq);
-
+  setupTIM2(20-1, (2 * scaler) - 1, (2 * scaler) / 2);
 
 
 //  uint addr1 = &(screen[0][0]);
@@ -259,103 +290,126 @@ int main(void)
 
 int index = 0;
 //setup rows
-
-for(int i = 0; i < row; i++) {
-  for(int j = 0; j < column; j++){
-
-    index = (i*column) + j;
-     if(j < 10) {
-       screen[index].red = 3;
-       screen[index].green = 1;
-       screen[index].blue = 3;
-     }
-     else{
-      if(i % 3 == 0){
-        screen[index].red = 1;
-        screen[index].green = 0;
-        screen[index].blue = 2;
-      }
-      else if (i % 2 == 0) {
-        screen[index].red = 1;
-        screen[index].green = 2;
-        screen[index].blue = 0;
-      }
-      else{
-        screen[index].red = 0;
-        screen[index].green = 1;
-        screen[index].blue = 2;
-      }
-    }
-
-    if(j == 63) {
-      screen[index].latch = 1;
-    }
-    else{
-      screen[index].latch = 0;
-    }
-
-    screen[index].row = i;
-    red = screen[index].red;
-    green = screen[index].green;
-    blue = screen[index].blue;
-  }
-}
-
-
-TIM2->EGR |= TIM_EGR_UG;
-TIM3->EGR |= TIM_EGR_UG;
-
-TIM2->CR1 |= TIM_CR1_CEN;
-//TIM3->CR1 |= TIM_CR1_CEN;
-//TIM17->CR1 |= TIM_CR1_CEN;
-
-int arr[64*32];
-
-for(int i = 0; i < 2048; i++){
-  arr[i] = i;
-}
-
-setupDMA(screen);
-
-while(1) {
-  for(int j = 0; j < 16; j++){
-    nanoWait(2500);
-    for(int i = 0; i < 1024; i++) {
-//      if(j % 3 == 0){
-//        screen[i].red = 0;
-//        screen[i].green = 0;
-//        screen[i].blue = 3;
-//      }
-//      else if (j % 2 == 0) {
-//        screen[i].red = 0;
-//        screen[i].green = 3;
-//        screen[i].blue = 0;
-//      }
-//      else{
-//        screen[i].red = 3;
-//        screen[i].green = 0;
-//        screen[i].blue = 0;
-//      }
-      if( i/64 >= j && (i/64) <= (j)){
-              screen[i].red = 3;
-              screen[i].green = 3;
-              screen[i].blue = 3;
-      }
-      else{
-        if(i%64 < 30){
-          screen[i].red = 1;
-          screen[i].green = 2;
-          screen[i].blue = 0;
+for(int s = 0; s < 3; s++){
+  for(int i = 0; i < row; i++) {
+    for(int j = 0; j < column; j++){
+      index = (i * column) + j + (s * 1024);
+       if(j < 10) {
+         screen[index].red = 3;
+         screen[index].green = 1;
+         screen[index].blue = 3;
+       }
+       else{
+        if(i % 3 == 0){
+          screen[index].red = 1;
+          screen[index].green = 0;
+          screen[index].blue = 2;
+        }
+        else if (i % 2 == 0) {
+          screen[index].red = 1;
+          screen[index].green = 2;
+          screen[index].blue = 0;
         }
         else{
-          screen[i].red = 1;
-          screen[i].green = 0;
-          screen[i].blue = 3;
+          screen[index].red = 0;
+          screen[index].green = 1;
+          screen[index].blue = 2;
         }
+      }
 
+      if(j == 63) {
+        screen[index].latch = 1;
+      }
+      else{
+        screen[index].latch = 0;
+      }
+      if(s>0){
+        screen[index].red = 0;
+        screen[index].green = 0;
+        screen[index].blue = 0;
+      }
+
+      screen[index].row = i;
+      red = screen[index].red;
+      green = screen[index].green;
+      blue = screen[index].blue;
+    }
+  }
+}
+
+TIM2->EGR |= TIM_EGR_UG;
+TIM2->CR1 |= TIM_CR1_CEN;
+
+setupDMA(screen);
+  for(int s = 0; s < 3; s++){
+    for(int i = 0; i < 16; i++) {
+      for(int j = 0; j < 64; j++){
+        index = (i*64) + j + (s * 1024);
+        screen[index].red = 0;
+        screen[index].green = 0;
+        screen[index].blue = 0;
       }
     }
   }
+
+int index4 = 0;
+while(1){
+  for(int rgb = 0; rgb < 64; rgb++){
+    for(int i = 0; i < 32; i++){
+      for(int j = 0; j < 64; j++) {
+        index4 = (64 * i) + j;
+        screen4[index4].red = 0;
+        screen4[index4].blue = 1;
+        screen4[index4].green = 3;
+      }
+    }
+
+  drawColors(screen4, screen);
+  }
+}
+
+
+while(1) {
+//  for(int j = 0; j < 16; j++){
+//    nanoWait(2500);
+//    for(int i = 0; i < 1024; i++) {
+////      if(j % 3 == 0){
+////        screen[i].red = 0;
+////        screen[i].green = 0;
+////        screen[i].blue = 3;
+////      }
+////      else if (j % 2 == 0) {
+////        screen[i].red = 0;
+////        screen[i].green = 3;
+////        screen[i].blue = 0;
+////      }
+////      else{
+////        screen[i].red = 3;
+////        screen[i].green = 0;
+////        screen[i].blue = 0;
+////      }
+//      if( i/64 >= j && (i/64) <= (j)){
+//              screen[i].red = 3;
+//              screen[i].green = 3;
+//              screen[i].blue = 3;
+//      }
+//      else{
+//        if(i%64 < 30){
+//          screen[i].red = 1;
+//          screen[i].green = 2;
+//          screen[i].blue = 0;
+//        }
+//        else{
+//          screen[i].red = 1;
+//          screen[i].green = 0;
+//          screen[i].blue = 3;
+//        }
+//
+//      }
+//    }
+//  }
+
+
 }
 
 //drawShape(screen, square, 8, 8, 0,0);
