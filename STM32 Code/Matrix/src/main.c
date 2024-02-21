@@ -226,12 +226,12 @@ int main(void)
     }
   }
 
-  int freq = 10;
+  int freq = 117;
   int scaler = 1;
   //0x03E8/scaler
   //setup(psc, arr, ccr);
   setupTIM2(117-1, (2 * scaler) - 1, (2 * scaler) / 2);
-  setupTIM3(1000-1, (128 * scaler) - 1, (scaler*127));
+  //setupTIM3(1000-1, (128 * scaler) - 1, (scaler*127));
 
 
   setupTIM17(freq);
@@ -318,8 +318,8 @@ for(int i = 0; i < 2048; i++){
 setupDMA(screen);
 
 while(1) {
-  for(int j = 0; j < 4096; j++){
-    nanoWait(10);
+  for(int j = 0; j < 16; j++){
+    nanoWait(2500);
     for(int i = 0; i < 1024; i++) {
 //      if(j % 3 == 0){
 //        screen[i].red = 0;
@@ -336,15 +336,23 @@ while(1) {
 //        screen[i].green = 0;
 //        screen[i].blue = 0;
 //      }
-      if( i == j/4){
+      if( i/64 >= j && (i/64) <= (j)){
               screen[i].red = 3;
-              screen[i].green = 0;
-              screen[i].blue = 0;
+              screen[i].green = 3;
+              screen[i].blue = 3;
       }
       else{
-        screen[i].red = 3;
-        screen[i].green = 3;
-        screen[i].blue = 3;
+        if(i%64 < 30){
+          screen[i].red = 1;
+          screen[i].green = 2;
+          screen[i].blue = 0;
+        }
+        else{
+          screen[i].red = 1;
+          screen[i].green = 0;
+          screen[i].blue = 3;
+        }
+
       }
     }
   }
