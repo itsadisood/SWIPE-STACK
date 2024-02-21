@@ -17,21 +17,28 @@
 
 extern void nano_wait(int);
 
+#define DETECTIONS_PER_SECOND 4 					// # of times the entire toolchain runs to display a output
+#define SAMPLES_SIZE (100/DETECTIONS_PER_SECOND)  // # of samples that must be filled in before calculating an output
+#define DEADZONE_INT 5 			// Define deadzone (+/- 5 degrees scaled to integer)
+#define LEFT_THRESHOLD_INT 20	// Left threshold for roll detection scaled to integer [20.0 degrees]
+#define RIGHT_THRESHOLD_INT -20 	// Right threshold for roll detection scaled to integer [-20.0 degrees]
+#define HYSTERESIS_MARGIN_INT 1 	// Hysteresis margin for roll detection scaled to integer [1 degrees]
+#define FIFOSIZE 19	// Number of bytes to receive from IMU into temp buffer before processing
+
 struct Packet
 {
-	float yaw;
-	float pitch;
-	float roll;
-	float x_acl;
-	float y_acl;
-	float z_acl;
+	float roll  [SAMPLES_SIZE];
+	float x_acl [SAMPLES_SIZE];
+	float z_acl [SAMPLES_SIZE];
 };
 
-struct Packet curr_packet;
 
-#define FIFOSIZE 19
+struct Packet curr_packet;
 uint8_t data_fifo[FIFOSIZE];
-int fifo_offset = 0;
+int samples_count = 0;
+
+
+
 
 float convertToFloat(uint8_t lsb, uint8_t msb)
 {
@@ -45,15 +52,11 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 void printVal()
 {
 	char* output = malloc(sizeof(char) * 70);
-	sprintf(output, "Y:%6.2f, P:%6.2f, R:%6.2f, ",
-//			"X-acl:%6.2f, Y-acl:%6.2f, Z-acl:%6.2f \n\r",
-//			curr_packet.yaw, curr_packet.pitch, curr_packet.roll,
-			curr_packet.x_acl, curr_packet.y_acl, curr_packet.z_acl);
 
-//
-//	sprintf(output, "%6.3f, %6.3f, %6.3f, %6.3f, %6.3f, %6.3f \n",
-//			curr_packet.yaw, curr_packet.pitch, curr_packet.roll,
-//			curr_packet.x_acl, curr_packet.y_acl, curr_packet.z_acl);
+	sprintf(output, "R:%6.2f, X-acl:%6.2f, Z-acl:%6.2f \n\r",
+				curr_packet.roll[samples_count], curr_packet.x_acl[samples_count], curr_packet.z_acl[samples_count]);
+
+
 	debugSendString(output);
 	free(output);
 }
@@ -61,14 +64,41 @@ void printVal()
 void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 {
 	DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
-	curr_packet.yaw = convertToFloat(data_fifo[3], data_fifo[4]);
-	curr_packet.pitch = convertToFloat(data_fifo[5], data_fifo[6]);
-	curr_packet.roll = convertToFloat(data_fifo[7], data_fifo[8]);
-	curr_packet.x_acl = convertToFloat(data_fifo[9], data_fifo[10]);
-	curr_packet.y_acl = convertToFloat(data_fifo[11], data_fifo[12]);
-	curr_packet.z_acl = convertToFloat(data_fifo[13], data_fifo[14]);
-	printVal();
+		if(data_fifo[0] == 'A' & data_fifo[1] == 'A' & data_fifo[2] == 'A' & data_fifo[3] == 'A' ) {
+		curr_packet.roll[samples_count] = convertToFloat(data_fifo[7], data_fifo[8]);
+		curr_packet.x_acl[samples_count] = convertToFloat(data_fifo[9], data_fifo[10]);
+		curr_packet.z_acl[samples_count] = convertToFloat(data_fifo[13], data_fifo[14]);
+		if(samples_count == SAMPLES_SIZE)
+		{
+			detect_roll(curr_packet.roll);
+
+		}
+	}
+
 }
+
+
+void detect_roll(float sampled_roll_values[]) {
+    float roll_count = 0; // Counter for significant roll samples
+
+    for (int i = 0; i < SAMPLES_SIZE; i++) {
+        float roll = sampled_roll_values[i];
+
+        // Check if roll is outside deadzones and thresholds
+        if ((roll > DEADZONE_INT || roll < -DEADZONE_INT) &&
+            ((roll > LEFT_THRESHOLD_INT + HYSTERESIS_MARGIN_INT) ||
+             (roll < RIGHT_THRESHOLD_INT - HYSTERESIS_MARGIN_INT))) {
+            roll_count++; // Increment roll count for significant roll samples
+        }
+    }
+
+    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
+    if (roll_count >= 5) { // Adjust threshold as needed
+        debugSendString("Roll is there\n\r"); // Send message indicating roll detection
+
+    }
+}
+
 
 void debugSend(char txdata) {
   while(!(USART5->ISR & USART_ISR_TXE)){}
@@ -81,6 +111,14 @@ void debugSendString(char* data) {
     debugSend(data[i]);
     i++;
   }
+}
+
+void debugSendInt(int value) {
+	char buffer[20];
+	sprintf(buffer, "%d\r\n", value); // Format integer value as a string
+	for (int i = 0; buffer[i] != '\0'; i++) {
+		debugSend(buffer[i]); // Send each character of the string
+	}
 }
 
 void setup_serial(void)
@@ -141,24 +179,19 @@ void setup_DMA()
 	NVIC -> ISER[0] |= (1<<DMA1_Ch2_3_DMA2_Ch1_2_IRQn);
 }
 
-void printInt(int val, char* pin) {
-  char* output = malloc(sizeof(char)*30);
-  sprintf(output, "%s value is %d\r\n", pin, val);
-  debugSendString(output);
-  free(output);
-}
-
-
 int main(void)
 {
   setup_serial();
   setup_DMA();
   setup_IMU_UART();
 
-  for(int i = 0; i<10000000;)
+  while(1)
   {
-	  i++;
+	  samples_count = (samples_count == SAMPLES_SIZE) ? 0 : samples_count + 1;
+//	  if(samples_count == 0)
+//		  debugSendString("New sample\n\r");
   }
+
 }
 
 
