@@ -8,12 +8,11 @@
   ******************************************************************************
 */
 
-
 #include "stm32f0xx.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "stdarg.h"
-
+#include "math.h"
 
 typedef struct pixel{
   unsigned int spacer : 1;
@@ -25,11 +24,16 @@ typedef struct pixel{
   unsigned int row : 5;
 }pixel;
 
-typedef struct pixel4{
+typedef struct __attribute__((__packed__))pixel4{
   unsigned int red : 2;
   unsigned int blue : 2;
   unsigned int green : 2;
 }pixel4;
+const uint16_t sineLookupTable[] = {
+2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3,
+3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2,
+2, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0,
+0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1};
 
 void drawColors(pixel4* colorScreen, pixel* screen) {
   //i is row, j is column
@@ -44,19 +48,10 @@ void drawColors(pixel4* colorScreen, pixel* screen) {
         screen[index + (s * 1024)].red   = (0b01 * (colorScreen[index].red   >= (s+1))) + (0b10 * (colorScreen[index + (1024)].red >= (s+1)));
         screen[index + (s * 1024)].blue  = (0b01 * (colorScreen[index].blue  >= (s+1))) + (0b10 * (colorScreen[index + (1024)].blue  >= (s+1)));
         screen[index + (s * 1024)].green = (0b01 * (colorScreen[index].green >= (s+1))) + (0b10 * (colorScreen[index + (1024)].green >= (s+1)));
-      }
+
+       }
     }
   }
-//  for(int s = 0; s < 3; s++){
-//    for(int i = 0; i < 16; i++) {
-//      for(int j = 0; j < 64; j++){
-//        index = (i*64) + j + (s * 1024);
-//        screen[index].red = 3;
-//        screen[index].green = 3;
-//        screen[index].blue = 3;
-//      }
-//    }
-//  }
   return;
 }
 void drawShape(pixel* screen, pixel* shape, int x, int y, int locx, int locy){
@@ -174,79 +169,6 @@ void setupTIM2(uint32_t psc, uint32_t arr, uint32_t ccr) {
 
 }
 
-void setupTIM3(uint32_t psc, uint32_t arr, uint32_t ccr) {
-  //prescaler to 1,000 so we get 48,000 hz out
-  int prescaler =  psc; //(0x03E8/scaler) - 1;
-  //reload to 100 so we get 480 hz out
-  int reload =  arr;//(64 * 100) - 1;
-
-  RCC->APB1ENR |= RCC_APB1ENR_TIM3EN;
-  RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
-
-  //set gpio b9 to output alternate function
-  GPIOB->MODER &= ~GPIO_MODER_MODER0_0;
-  GPIOB->MODER |= GPIO_MODER_MODER0_1;
-
-  //set AFR for pin 1 to the value 2
-  GPIOB->AFR[0] |= 0x1  << (4 * 0);
-
-  //set prescaler
-  TIM3->PSC = prescaler;
-  TIM3->ARR = reload;
-  TIM3->CCR3 = ccr;
-
-  //set dir
-  TIM3->CR1 &= ~TIM_CR1_DIR;
-
-  //set OCcM to 110
-  TIM3->CCMR2 |= TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR2_OC3M_0;
-
-  //set slave mode
-  TIM3->SMCR |= TIM_SMCR_TS_0  | TIM_SMCR_SMS_2 | TIM_SMCR_SMS_1;
-
-  //enable channel
-  TIM3->CCER |= TIM_CCER_CC3E;
-}
-
-
-void setupTIM17(int scaler) {
-  //prescaler to 1,000 so we get 48,000 hz out
-  int prescaler =  (0x03E8/scaler) - 1;
-  //reload to 100 so we get 480 hz out
-  int reload =  (64 * 100) - 1;
-
-  RCC->APB2ENR |= RCC_APB2ENR_TIM17EN;
-  RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
-
-  //set gpio b9 to output alternate function
-  GPIOB->MODER |= GPIO_MODER_MODER9_1;
-  //GPIOB->MODER |= GPIO_MODER_MODER7_1;
-
-  //set AFR for pin 1 to the value 2
-  GPIOB->AFR[1] |= 0x2 << 4;
-  //GPIOB->AFR[0] |= 0x2 << (4 * 7);
-
-  //set prescaler
-  TIM17->PSC = prescaler;
-  TIM17->ARR = reload;
-  //set dir
-  TIM17->CR1 &= ~TIM_CR1_DIR;
-
-  //set OCcM to 110
-  TIM17->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2| TIM_CCMR1_OC1M_0;
-
-  //set CCR to
-  TIM17->CCR1 = ((reload+1) - 64);
-
-  TIM17->BDTR |= TIM_BDTR_MOE;
-
-  //enable channel
-  TIM17->CCER |= TIM_CCER_CC1E;
-  TIM17->CCER |= TIM_CCER_CC1NE;
-
-
-}
-
 
 int main(void)
 {
@@ -254,6 +176,7 @@ int main(void)
   volatile pixel4* screen4 = malloc(sizeof(pixel4) * 32 * 64);
   pixel* square = malloc(sizeof(pixel) * 8 * 8);
 
+  //draw square
   for(int i = 0; i < 8; i++){
     for(int j = 0; j < 8; j++){
       square[(i*8)+j].red = 1;
@@ -262,83 +185,38 @@ int main(void)
     }
   }
 
-  int freq = 117;
+  //int freq = 117;
   int scaler = 1;
   //0x03E8/scaler
-  //setup(psc, arr, ccr);
-  setupTIM2(20-1, (2 * scaler) - 1, (2 * scaler) / 2);
+  setupTIM2(10-1, (2 * scaler) - 1, (2 * scaler) / 2);
 
-
-//  uint addr1 = &(screen[0][0]);
-//  uint addr2 = &(screen[1][0]);
-//  uint addr3 = &(screen[0][1]);
-//
-//  int structSize  = (uint)&(screen[1][0]) - (uint)&(screen[0][0]);
-//  int structSize2 = (uint)&(screen[0][1]) - (uint)&(screen[0][0]);
-//
-//  int addrSize = addr2 - addr1;
-//  int addrSize2 = addr3 - addr1;
-//
-//  size_t size = sizeof(pixel);
-//  size_t intSize = sizeof(int);
-
-
-  int red, green, blue;
 
   int row = 16;
   int column = 64;
 
 int index = 0;
-//setup rows
+//initialize screen array
 for(int s = 0; s < 3; s++){
   for(int i = 0; i < row; i++) {
     for(int j = 0; j < column; j++){
       index = (i * column) + j + (s * 1024);
-       if(j < 10) {
-         screen[index].red = 3;
-         screen[index].green = 1;
-         screen[index].blue = 3;
-       }
-       else{
-        if(i % 3 == 0){
-          screen[index].red = 1;
-          screen[index].green = 0;
-          screen[index].blue = 2;
-        }
-        else if (i % 2 == 0) {
-          screen[index].red = 1;
-          screen[index].green = 2;
-          screen[index].blue = 0;
-        }
-        else{
-          screen[index].red = 0;
-          screen[index].green = 1;
-          screen[index].blue = 2;
-        }
-      }
-
+      screen[index].red = 0;
+      screen[index].green = 0;
+      screen[index].blue = 0;
       if(j == 63) {
         screen[index].latch = 1;
       }
       else{
         screen[index].latch = 0;
       }
-      if(s>0){
-        screen[index].red = 0;
-        screen[index].green = 0;
-        screen[index].blue = 0;
-      }
-
       screen[index].row = i;
-      red = screen[index].red;
-      green = screen[index].green;
-      blue = screen[index].blue;
     }
   }
 }
 
 TIM2->EGR |= TIM_EGR_UG;
 TIM2->CR1 |= TIM_CR1_CEN;
+size_t packedSize = sizeof(pixel4);
 
 setupDMA(screen);
   for(int s = 0; s < 3; s++){
@@ -351,16 +229,15 @@ setupDMA(screen);
       }
     }
   }
-
 int index4 = 0;
 while(1){
   for(int rgb = 0; rgb < 64; rgb++){
     for(int i = 0; i < 32; i++){
       for(int j = 0; j < 64; j++) {
         index4 = (64 * i) + j;
-        screen4[index4].red = 0;
-        screen4[index4].blue = 1;
-        screen4[index4].green = 3;
+        screen4[index4].red =   sineLookupTable[rgb];
+        screen4[index4].blue =  sineLookupTable[(rgb + 21) % 63];
+        screen4[index4].green = sineLookupTable[(rgb + 43) % 63];
       }
     }
 
@@ -369,58 +246,6 @@ while(1){
 }
 
 
-while(1) {
-//  for(int j = 0; j < 16; j++){
-//    nanoWait(2500);
-//    for(int i = 0; i < 1024; i++) {
-////      if(j % 3 == 0){
-////        screen[i].red = 0;
-////        screen[i].green = 0;
-////        screen[i].blue = 3;
-////      }
-////      else if (j % 2 == 0) {
-////        screen[i].red = 0;
-////        screen[i].green = 3;
-////        screen[i].blue = 0;
-////      }
-////      else{
-////        screen[i].red = 3;
-////        screen[i].green = 0;
-////        screen[i].blue = 0;
-////      }
-//      if( i/64 >= j && (i/64) <= (j)){
-//              screen[i].red = 3;
-//              screen[i].green = 3;
-//              screen[i].blue = 3;
-//      }
-//      else{
-//        if(i%64 < 30){
-//          screen[i].red = 1;
-//          screen[i].green = 2;
-//          screen[i].blue = 0;
-//        }
-//        else{
-//          screen[i].red = 1;
-//          screen[i].green = 0;
-//          screen[i].blue = 3;
-//        }
-//
-//      }
-//    }
-//  }
 
-
-}
-
-//drawShape(screen, square, 8, 8, 0,0);
-
-volatile int l = 1;
-int j = 0;
-while(l){
-  for(int i = 0; i< 200; i++){
-    j = i * 10 + j;
-  }
-}
-j = 20;
 
 }
