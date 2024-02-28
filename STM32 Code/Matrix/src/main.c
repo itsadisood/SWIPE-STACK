@@ -320,7 +320,7 @@ for(int s = 0; s < 3; s++){
         screen[index].latch = 0;
       }
       //setup row indexes
-      screen[index].row = (i-1) % 63;
+      screen[index].row = (i-1) % 15;
     }
   }
 }

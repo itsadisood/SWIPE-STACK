@@ -2710,6 +2710,9 @@
   (junction (at 246.38 78.74) (diameter 0) (color 0 0 0 0)
     (uuid fc534101-eaba-4b3c-8ab7-dd9c983800fd)
   )
+  (junction (at 96.52 191.77) (diameter 0) (color 0 0 0 0)
+    (uuid fc6a83dc-409c-41d5-955f-da73d0618903)
+  )
   (junction (at 147.32 33.02) (diameter 0) (color 0 0 0 0)
     (uuid fcb21445-cbc6-4dc9-8dd2-e8c9e4b178f0)
   )
@@ -4537,6 +4540,31 @@
     )
   )
 
+  (symbol (lib_id "power:GNDA") (at 102.87 157.48 0) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 0fe7cb47-821d-4d3c-9da6-16b3c085fed1)
+    (property "Reference" "#PWR046" (at 102.87 163.83 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "GNDA" (at 102.87 162.56 0)
+      (effects (font (size 1.27 1.27)))
+    )
+    (property "Footprint" "" (at 102.87 157.48 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "" (at 102.87 157.48 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 1237e3e8-755b-4cfb-b26c-431ecd2fb74b))
+    (instances
+      (project "swipe-stack-hub"
+        (path "/2a19c3a6-698c-4845-b3c3-139632a3e17c"
+          (reference "#PWR046") (unit 1)
+        )
+      )
+    )
+  )
+
   (symbol (lib_id "power:GND") (at 34.29 26.67 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 119c42b9-02c4-4d84-a94c-0b9139b45bd4)
@@ -4928,6 +4956,31 @@
       (project "swipe-stack-hub"
         (path "/2a19c3a6-698c-4845-b3c3-139632a3e17c"
           (reference "#PWR015") (unit 1)
+        )
+      )
+    )
+  )
+
+  (symbol (lib_id "power:PWR_FLAG") (at 96.52 191.77 270) (unit 1)
+    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
+    (uuid 435a8c5e-690f-45c0-a3b0-12c1d30f4fb2)
+    (property "Reference" "#FLG05" (at 98.425 191.77 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Value" "PWR_FLAG" (at 100.33 191.77 90)
+      (effects (font (size 1.27 1.27)) (justify left))
+    )
+    (property "Footprint" "" (at 96.52 191.77 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (at 96.52 191.77 0)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid d6f02fe5-3a77-4d5a-bd7a-fb903dfe5298))
+    (instances
+      (project "swipe-stack-hub"
+        (path "/2a19c3a6-698c-4845-b3c3-139632a3e17c"
+          (reference "#FLG05") (unit 1)
         )
       )
     )
@@ -6491,31 +6544,6 @@
       (project "swipe-stack-hub"
         (path "/2a19c3a6-698c-4845-b3c3-139632a3e17c"
           (reference "J9") (unit 1)
-        )
-      )
-    )
-  )
-
-  (symbol (lib_id "power:GNDA") (at 102.87 157.48 0) (unit 1)
-    (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
-    (uuid d28f6c5e-2aec-4c6f-a266-7dc68967af52)
-    (property "Reference" "#PWR046" (at 102.87 163.83 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (property "Value" "GNDA" (at 102.87 162.56 0)
-      (effects (font (size 1.27 1.27)))
-    )
-    (property "Footprint" "" (at 102.87 157.48 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (property "Datasheet" "" (at 102.87 157.48 0)
-      (effects (font (size 1.27 1.27)) hide)
-    )
-    (pin "1" (uuid 0d16c309-b7b1-4185-9e4e-f3e058ba4068))
-    (instances
-      (project "swipe-stack-hub"
-        (path "/2a19c3a6-698c-4845-b3c3-139632a3e17c"
-          (reference "#PWR046") (unit 1)
         )
       )
     )
