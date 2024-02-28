@@ -1,15 +1,22 @@
-3416765185137
-477
-HM-11-MODULE
-Chinese HM-11 Bluetooth Low Energy module -- Phillip Pearson
+5127215553176
+Library
+IDC-Header_2x05_P1.27mm_Vertical_SMD
+SMD IDC box header, 2x05, 2.54mm pitch, DIN 41651 / IEC 60603-13, double rows, https://www.tme.eu/Document/4baa0e952ce73e37bc68cf730b541507/T821M114A1S100CEU-B.pdf
+SMD vertical IDC box header  2x05 2.54mm double row
+0
+10
+10
+Library
+RES_ARRAY
+
+EXB-2HV100JV 
+0
+16
+16
+Library
+SOIC127P762X240-16N
+Res Thick Film NET 68K Ohm 2% 1.28W ±100ppm/C ISOL Molded 16-Pin SOM Gull Wing SMD Automotive T/R
 
 0
 16
 16
-477
-Speaker
-
-
-0
-2
-2
