@@ -1,4 +1,4 @@
-22646657327964092
+22648365893619823
 Audio_Module
 Reverb_BTDR-1H
 Digital Reverberation Unit, http://www.belton.co.kr/inc/downfile.php?seq=17&file=pdf (footprint from http://www.uk-electronic.de/PDF/BTDR-1.pdf)
@@ -56111,6 +56111,13 @@ mounting hole 2.5mm no annular
 0
 0
 0
+GlovePCB
+SW_B3F-1000
+
+
+0
+4
+4
 GlovePCB
 XTAL_ECS-.327-12.5-34RR-TR
 
