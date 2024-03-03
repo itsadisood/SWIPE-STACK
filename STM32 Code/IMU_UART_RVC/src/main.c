@@ -8,7 +8,6 @@
   ******************************************************************************
 */
 
-
 #include "stm32f0xx.h"
 #include "stdlib.h"
 #include "stdarg.h"
@@ -17,28 +16,26 @@
 
 extern void nano_wait(int);
 
-#define DETECTIONS_PER_SECOND 4 					// # of times the entire toolchain runs to display a output
-#define SAMPLES_SIZE (100/DETECTIONS_PER_SECOND)  // # of samples that must be filled in before calculating an output
-#define DEADZONE_INT 5 			// Define deadzone (+/- 5 degrees scaled to integer)
-#define LEFT_THRESHOLD_INT 20	// Left threshold for roll detection scaled to integer [20.0 degrees]
-#define RIGHT_THRESHOLD_INT -20 	// Right threshold for roll detection scaled to integer [-20.0 degrees]
-#define HYSTERESIS_MARGIN_INT 1 	// Hysteresis margin for roll detection scaled to integer [1 degrees]
-#define FIFOSIZE 19	// Number of bytes to receive from IMU into temp buffer before processing
+// ***************** data structure sizing constants ****************
+#define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
+#define PREDICTIONS_PER_SECOND 	4 								// # of times the entire toolchain runs to display a output
+#define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
+
+// ***************** gesture senstivity constants ****************
+#define DEADZONE_INT 				5
+#define ROLL_THRESHOLD 			30
+
+uint8_t data_fifo[FIFOSIZE];
 
 struct Packet
 {
-	float roll  [SAMPLES_SIZE];
-	float x_acl [SAMPLES_SIZE];
-	float z_acl [SAMPLES_SIZE];
+	float roll  [PACKET_SIZE];
+	float x_acl [PACKET_SIZE];
+	float z_acl [PACKET_SIZE];
 };
-
-
 struct Packet curr_packet;
-uint8_t data_fifo[FIFOSIZE];
-int samples_count = 0;
 
-
-
+int curr_sample_num = 0;
 
 float convertToFloat(uint8_t lsb, uint8_t msb)
 {
@@ -49,62 +46,10 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 	return final_number;
 }
 
-void printVal()
-{
-	char* output = malloc(sizeof(char) * 70);
-
-	sprintf(output, "R:%6.2f, X-acl:%6.2f, Z-acl:%6.2f \n\r",
-				curr_packet.roll[samples_count], curr_packet.x_acl[samples_count], curr_packet.z_acl[samples_count]);
-
-
-	debugSendString(output);
-	free(output);
-}
-
-void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
-{
-	DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
-		if(data_fifo[0] == 'A' & data_fifo[1] == 'A' & data_fifo[2] == 'A' & data_fifo[3] == 'A' ) {
-		curr_packet.roll[samples_count] = convertToFloat(data_fifo[7], data_fifo[8]);
-		curr_packet.x_acl[samples_count] = convertToFloat(data_fifo[9], data_fifo[10]);
-		curr_packet.z_acl[samples_count] = convertToFloat(data_fifo[13], data_fifo[14]);
-		if(samples_count == SAMPLES_SIZE)
-		{
-			detect_roll(curr_packet.roll);
-
-		}
-	}
-
-}
-
-
-void detect_roll(float sampled_roll_values[]) {
-    float roll_count = 0; // Counter for significant roll samples
-
-    for (int i = 0; i < SAMPLES_SIZE; i++) {
-        float roll = sampled_roll_values[i];
-
-        // Check if roll is outside deadzones and thresholds
-        if ((roll > DEADZONE_INT || roll < -DEADZONE_INT) &&
-            ((roll > LEFT_THRESHOLD_INT + HYSTERESIS_MARGIN_INT) ||
-             (roll < RIGHT_THRESHOLD_INT - HYSTERESIS_MARGIN_INT))) {
-            roll_count++; // Increment roll count for significant roll samples
-        }
-    }
-
-    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
-    if (roll_count >= 5) { // Adjust threshold as needed
-        debugSendString("Roll is there\n\r"); // Send message indicating roll detection
-
-    }
-}
-
-
 void debugSend(char txdata) {
   while(!(USART5->ISR & USART_ISR_TXE)){}
       USART5->TDR = txdata;
 }
-
 void debugSendString(char* data) {
   int i = 0;
   while(data[i] != '\0') {
@@ -118,6 +63,79 @@ void debugSendInt(int value) {
 	sprintf(buffer, "%d\r\n", value); // Format integer value as a string
 	for (int i = 0; buffer[i] != '\0'; i++) {
 		debugSend(buffer[i]); // Send each character of the string
+	}
+}
+
+void printVal()
+{
+	char* output = malloc(sizeof(char) * 70);
+	sprintf(output, "Roll:%6.2f,   X-acl:%6.2f,   Z-acl:%6.2f \n\r",
+				curr_packet.roll[curr_sample_num], curr_packet.x_acl[curr_sample_num], curr_packet.z_acl[curr_sample_num]);
+	debugSendString(output);
+	free(output);
+}
+
+
+void detect_roll(float sampled_roll_values[]) {
+    int left_roll_count = 0;
+    int right_roll_count = 0;
+
+    for (int i = 0; i < PACKET_SIZE; i++)
+    {
+        // Check if roll is outside deadzones and thresholds
+        if (sampled_roll_values[i] < -(DEADZONE_INT + ROLL_THRESHOLD))
+        {
+            left_roll_count++; // Increment roll count for significant roll samples
+        }
+        else if(sampled_roll_values[i] > DEADZONE_INT + ROLL_THRESHOLD)
+        {
+        	right_roll_count++;
+        }
+    }
+
+    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
+    if (left_roll_count >= PACKET_SIZE/2)
+    {
+        debugSendString("******LEFT ROLL DETECTED *****\n\r"); // Send message indicating roll detection
+
+    }
+    else if (right_roll_count >= PACKET_SIZE/2)
+	{
+		debugSendString("******RIGHT ROLL DETECTED *****\n\r"); // Send message indicating roll detection
+
+	}
+}
+
+void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
+{
+	//only have 10 ms for this processing
+
+	if(data_fifo[0] == 0xAA && data_fifo[1] == 0XAA) // enforce header check
+	{
+		if(curr_sample_num == PACKET_SIZE)
+		{
+			// do prediction call
+			curr_sample_num = 0;
+			debugSendString("Ready to predict\n\r");
+			detect_roll(curr_packet.roll);
+//			printVal();
+		}
+		else
+		{
+			// fill packet buffer
+			DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
+			curr_packet.roll[curr_sample_num] = convertToFloat(data_fifo[7], data_fifo[8]);
+			curr_packet.x_acl[curr_sample_num] = convertToFloat(data_fifo[9], data_fifo[10]);
+			curr_packet.z_acl[curr_sample_num] = convertToFloat(data_fifo[13], data_fifo[14]);
+			curr_sample_num += 1;
+//			printVal();
+		}
+	}
+	else // got mis-aligned, cleanup and start again.
+	{
+		debugSendString("Misaligned. Fixing now.");
+		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
+		setup_DMA();
 	}
 }
 
@@ -138,7 +156,7 @@ void setup_serial(void)
 
 void setup_IMU_UART(void)
 {
-	//PB5 -> Active-low IMU reset
+	//PB5 -> Active-low IMU reset (output)
 	//PB6 -> UART TX (floating)
 	//PB7 -> UART RX
 
@@ -147,7 +165,6 @@ void setup_IMU_UART(void)
 	GPIOB->MODER |= GPIO_MODER_MODER6_1 | GPIO_MODER_MODER7_1; // AFR mode (UART)
 	GPIOB->AFR[0] &= ~(GPIO_AFRL_AFRL6 | GPIO_AFRL_AFRL7); // AF0
 	nano_wait(1000000);
-	GPIOB->BSRR |= GPIO_BSRR_BS_5; // Make PB5 high to avoid reset
 
 	RCC -> APB2ENR |= RCC_APB2ENR_USART1EN;                // clock on for usart1
 	USART1 -> CR1 &= ~USART_CR1_UE;                        // turn off for config
@@ -187,12 +204,7 @@ int main(void)
 
   while(1)
   {
-	  samples_count = (samples_count == SAMPLES_SIZE) ? 0 : samples_count + 1;
-//	  if(samples_count == 0)
-//		  debugSendString("New sample\n\r");
+	  asm("wfi");
   }
 
 }
-
-
-
