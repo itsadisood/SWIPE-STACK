@@ -18,12 +18,15 @@ extern void nano_wait(int);
 
 // ***************** data structure sizing constants ****************
 #define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
-#define PREDICTIONS_PER_SECOND 	4 								// # of times the entire toolchain runs to display a output
+#define PREDICTIONS_PER_SECOND 	20 								// # of times the entire toolchain runs to display a output
 #define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // ***************** gesture senstivity constants ****************
-#define DEADZONE_INT 				5
-#define ROLL_THRESHOLD 			30
+#define DEADZONE_ROLL 				5								// deadzone consideration for resting hand movement
+#define ROLL_THRESHOLD 			30								//
+#define X_ACL_THRESHOLD			2.9
+#define Y_ACL_THRESHOLD
+
 
 uint8_t data_fifo[FIFOSIZE];
 
@@ -75,7 +78,6 @@ void printVal()
 	free(output);
 }
 
-
 void detect_roll(float sampled_roll_values[]) {
     int left_roll_count = 0;
     int right_roll_count = 0;
@@ -83,26 +85,51 @@ void detect_roll(float sampled_roll_values[]) {
     for (int i = 0; i < PACKET_SIZE; i++)
     {
         // Check if roll is outside deadzones and thresholds
-        if (sampled_roll_values[i] < -(DEADZONE_INT + ROLL_THRESHOLD))
+        if (sampled_roll_values[i] < -(DEADZONE_ROLL + ROLL_THRESHOLD))
         {
             left_roll_count++; // Increment roll count for significant roll samples
         }
-        else if(sampled_roll_values[i] > DEADZONE_INT + ROLL_THRESHOLD)
+        else if(sampled_roll_values[i] > DEADZONE_ROLL + ROLL_THRESHOLD)
         {
         	right_roll_count++;
         }
     }
-
     // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
     if (left_roll_count >= PACKET_SIZE/2)
     {
         debugSendString("******LEFT ROLL DETECTED *****\n\r"); // Send message indicating roll detection
-
     }
     else if (right_roll_count >= PACKET_SIZE/2)
 	{
 		debugSendString("******RIGHT ROLL DETECTED *****\n\r"); // Send message indicating roll detection
+	}
+}
 
+
+void detect_swipe_horizontal(float sampled_x_acl_values[]) {
+    int left_swipe_count = 0;
+    int right_swipe_count = 0;
+
+    for (int i = 0; i < PACKET_SIZE; i++)
+    {
+        // Check if roll is outside deadzones and thresholds
+        if (sampled_x_acl_values[i] < -X_ACL_THRESHOLD)
+        {
+            left_swipe_count++; // Increment roll count for significant roll samples
+        }
+        else if(sampled_x_acl_values[i] > X_ACL_THRESHOLD)
+        {
+        	right_swipe_count++;
+        }
+    }
+    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
+    if (left_swipe_count >= PACKET_SIZE/2)
+    {
+        debugSendString("******LEFT SWIPE DETECTED *****\n\r"); // Send message indicating roll detection
+    }
+    else if (right_swipe_count >= PACKET_SIZE/2)
+	{
+		debugSendString("******RIGHT SWIPE DETECTED *****\n\r"); // Send message indicating roll detection
 	}
 }
 
@@ -118,6 +145,7 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 			curr_sample_num = 0;
 			debugSendString("Ready to predict\n\r");
 			detect_roll(curr_packet.roll);
+			detect_swipe_horizontal(curr_packet.x_acl);
 //			printVal();
 		}
 		else
@@ -206,5 +234,12 @@ int main(void)
   {
 	  asm("wfi");
   }
-
 }
+
+
+//TODO :
+// implement Bluetooth transmission logic
+// x-acl functions
+// y-acl functions
+// optimize for floating point operation
+
