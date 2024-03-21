@@ -16,6 +16,9 @@
 #include <stdint.h>
 
 #define NUM_SHAPES 7
+#define SHAPE_NUM_PIX 16
+#define NUM_ROWS_BOARD 24
+#define NUM_COLS_BOARD 44
 
 extern volatile uint64_t global_count;
 
@@ -34,7 +37,7 @@ typedef enum
 
 typedef struct 
 {
-  uint8_t width; // width
+  uint8_t width; // the no bits in number
 	uint8_t height; // height
 	const uint64_t * pmap; // pixel map
 } map_t;

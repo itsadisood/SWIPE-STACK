@@ -17,6 +17,7 @@
 #define HUB75_H HUB75_R << 1
 #define MEMSIZE HUB75_R * HUB75_C
 
+
 typedef struct
 {
 	int color : 6;
@@ -24,6 +25,12 @@ typedef struct
 	int space : 4;
 	int raddr : 5;
 } pixel_t;
+
+typedef struct
+{
+	uint8_t x;
+	uint8_t y;
+} coord_t;
 
 void nano_wait (unsigned int);
 
@@ -38,5 +45,7 @@ void setup_tim2 (uint32_t psc, uint32_t arr, uint32_t ccr);
 void init_screen (pixel_t * screen, hub75_color_t color);
 
 void sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75_color_t color, bool set);
+
+void sr_coord (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
 
 #endif

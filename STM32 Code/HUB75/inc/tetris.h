@@ -16,4 +16,11 @@ typedef struct
 
 Piece_t piece_init (void);
 
+void tetris (pixel_t * screen);
+
+void convert_shape_format (coord_t * positions, Piece_t piece);
+
+bool is_valid_space (uint64_t * locked_positions, Piece_t piece);
+
+void lock_pos (uint64_t * lockes_position, Piece_t piece);
 #endif
