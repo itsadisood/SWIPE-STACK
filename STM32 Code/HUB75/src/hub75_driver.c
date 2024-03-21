@@ -4,7 +4,8 @@
  * Vishnu Lagudu
  * vlagudu@purdue.edu
  *
- * Driver for HUB75 matrix
+ * Driver for HUB75 matrix using the DMA
+ * and timers 
  */
 
 #include "hub75_driver.h"
@@ -18,164 +19,145 @@ nano_wait(unsigned int n)
       "repeat: sub r0,#83\n"
       "        bgt repeat\n" : : "r"(n) : "r0", "cc");
 }
+/*
+	Communication with the DMA through the OLED
+*/
 
-// initialize the gpio ports 
-// for HUB75 matrix
+/*
+	Initalize the IO
+	[0,6],[11,15] as output
+	10 as alternate function for TIM2 channel 3
+*/
 void
 init_io (void)
 {
-	// Start the RCC clock for ports A and B
-  RCC -> AHBENR |= RCC_AHBENR_GPIOAEN;
-  RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;
-  
-  // Coinfigure pins to outputs
-  GPIOA -> MODER &= 0xfC000000;
-  GPIOA -> MODER |= 0x01555555;
-  GPIOB -> MODER &= ~0x3;
-  GPIOB -> MODER |= 0x1;
+	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
+	// clear for the pins
+	GPIOB->MODER &= 0x000fc000;
+	// set the modes
+	GPIOB->MODER |= 0x55601555;
+	// set the alternate function
+	GPIOB->AFR[1] &= ~(0xf << (4 * 2));
+	GPIOB->AFR[1] |= 0x2 << (4 * 2);
 }
 
-void
-clock (void)
-{
-  GPIOA -> BSRR = 0x1 << 11;
-  GPIOA -> BRR  = (0x1 << 11);
-}
-
-void
-latch (void)
-{
-//  nano_wait (500);
-  GPIOA -> BSRR = 0x1 << 12;
-//  nano_wait (500);
-  GPIOA -> BRR  = (0x1 << 12);
-}
-
-/*
- * Function to fill display with a solid color
- */
-void
-fill_disp (uint8_t color)
-{
-  int offset, row, i;
-
-  i = 0;
-  for (;;)
-  {
-	int row = i & 0x3f;
-    offset = 0;
-    if (row > 0x1f)
-    {
-      offset = 3;
-      row    = row & 0x1f;
-    }
-    
-    // set the row address
-    GPIOA -> ODR &= ~(0x1f << 6);
-    GPIOA -> ODR |= (row << 6);
-
-    for (int j = 0; j < HUB75_W; j++)
-    {
-      GPIOA -> ODR |= color << offset;
-      clock ();
-    }
-
-    latch ();
-
-    GPIOB -> ODR |= 0x1;
-    GPIOB -> ODR &= ~0x1;
-
-    i++;
-  }
-}
-
-void
-writebyte (uint8_t byte, uint8_t color)
-{
-  for (int i = 0; i < 64; i++)
-  {
-	  // set the default to blank
-	  GPIOA -> BRR = (0x3f);
-	  if (i < 8)
-	  {
-		  GPIOA -> BRR = (0x3f);
-		  if (byte & 0x80)
-		  {
-			  // if pixel present set to a color
-			  GPIOA -> BSRR = color;
-		  }
-		  // change the pixel at msb
-		  byte<<=1;
-	  }
-	  // clock in pixel by pixel
-	  clock ();
-  }
-}
-
-void
-showchar (uint8_t row, uint8_t color, uint8_t* char_map)
-{
-	uint8_t offset = 0;
-	for (int i = 0; i < 8; i++)
-	{
-		// wrap the row
-		if (row > 15)
-		{
-			row    = row & 0xf;
-			offset = 3;
-		}
-		// Enable blank
-//		GPIOB -> BSRR = 0x1;
-		// set the row index
-		GPIOA -> BRR  = (0x1f << 6);
-		GPIOA -> BSRR = (row << 6);
-		// write byte
-		writebyte (char_map[i], color << offset);
-		// latch the row
-		GPIOB -> BSRR = 0x1;
-		latch ();
-		// disable blank
-		GPIOB -> BRR = 0x1;
-		// wait to increase duty cycle
-		nano_wait(50000 - 34000);
-//		nano_wait(5000000 -3400000);
-		// decrement the row index
-		row--;
-	}
-}
-
-void setup_dma (void* addr)
+/* 
+	DMA to send data from memory to the ODR at the 
+	@negedge of the clk.
+*/
+void 
+setup_dma (void * addr)
 {
 	RCC->AHBENR |= RCC_AHBENR_DMAEN;
-	// Total size of trnasfer
-	DMA1_Channel1->CNDTR = 64 * 16;
-	// memory address
+	// set CCR to reset value;
+	DMA1_Channel1->CCR = 0;
+	// Total size of transfer 64 cols * 32 rows
+	DMA1_Channel1->CNDTR = MEMSIZE;
+	// Memory Location
 	DMA1_Channel1->CMAR = (uint32_t) addr;
 	// Peripheral Destination
 	DMA1_Channel1->CPAR = (uint32_t) (&(GPIOB->ODR));
-	//set memory access size to 32 bits
-	DMA1_Channel1->CCR |= DMA_CCR_MSIZE_1;
-
-  //set peripheral access size to 16 bits
-  DMA1_Channel1->CCR |= DMA_CCR_PSIZE_0;
-
-  //set minc to 1 and pinc to 0
-  DMA1_Channel1->CCR &= ~DMA_CCR_PINC;
-  DMA1_Channel1->CCR |= DMA_CCR_MINC;
-
-  //set to circular
-  DMA1_Channel1->CCR |= DMA_CCR_CIRC;
-  //set to mem to peripheral direction
-  DMA1_Channel1->CCR |= DMA_CCR_DIR;
-
-  //TIM2 is the default mapping for DMA1 Channel1
-  //DMA1->RMPCR |= DMA_RMPCR1_CH3_TIM2;
-
-
-  //enable the channel
-  DMA1_Channel1->CCR |= DMA_CCR_EN;
-
-
-
+	// mem access : 32 bits
+	// periph access : 16 bits
+	DMA1_Channel1->CCR |= (DMA_CCR_MSIZE_1 | DMA_CCR_PSIZE_0);
+	// Allow memory increment
+	DMA1_Channel1->CCR |= DMA_CCR_MINC;
+	// Set up for circular transfers
+	DMA1_Channel1->CCR |= DMA_CCR_CIRC;
+	// Direction: MEMORY -> PERIPHERAL
+	DMA1_Channel1->CCR |= DMA_CCR_DIR;
+	// Set the Priority Level to Very High
+	DMA1_Channel1->CCR |= DMA_CCR_PL;
 }
 
+void
+ed_dma (bool DMA_FLG)
+{
+	if (DMA_FLG)
+	{
+		DMA1_Channel1->CCR |= DMA_CCR_EN;
+	}
+	else
+	{
+		DMA1_Channel1->CCR &= ~DMA_CCR_EN;
+	}
+}
+
+/* 
+	Upcounting Timer 2 to produce a PWM wave at channel 3. 
+	DMA is triggered by the timer.
+*/
+void 
+setup_tim2 (uint32_t psc, uint32_t arr, uint32_t ccr)
+{
+	// Turn on the clock for timer 2
+	RCC -> APB1ENR |= RCC_APB1ENR_TIM2EN;
+	// set the clk freq
+	TIM2->PSC = psc-1;
+	TIM2->ARR = arr-1;
+	// Set for Upcounting
+	TIM2->CR1 &= ~TIM_CR1_DIR;
+	// Set the Channel 3 for PWM mode 2
+	TIM2->CCMR2 |= (TIM_CCMR2_OC3M_1 | TIM_CCMR2_OC3M_2| TIM_CCMR2_OC3M_0);
+	// set the CCR value to produce PWM of desired duty cycle
+	TIM2->CCR3 = ccr;
+	// Enable DMA transfer at the @posedge of the clk
+	TIM2->DIER |= TIM_DIER_CC3DE;
+	TIM2->CCER |= TIM_CCER_CC3E;
+	// Turn on timer
+	TIM2->CR1 |= 0x1;
+}
+
+/*
+	Initialize screen to the desired color
+*/
+
+void
+init_screen (pixel_t * screen, hub75_color_t color)
+{
+	// volatile int size = sizeof(Pixel);
+	for (uint8_t x = 0; x < HUB75_R; x++)
+	{
+		for (uint8_t y = 0; y < HUB75_C; y++)
+		{
+			if (y == (HUB75_C - 1))
+			{
+				screen[x * HUB75_C + y].latch = 1;
+			}
+			else
+			{
+				screen[x * HUB75_C + y].latch = 0;
+			}
+			screen[x * HUB75_C + y].color = (color << 3) + color;
+			screen[x * HUB75_C + y].raddr = (x-1) & 0xf;
+		}
+	}
+}
+
+void
+sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75_color_t color, bool set)
+{
+	// check if the values are within the range
+	if ((row + typeface.height) > HUB75_H) return;
+	if ((col + typeface.width) > HUB75_C) return;
+
+	uint8_t offset = 0, i = 0;
+	for (uint8_t x = row; x < row+typeface.height; x++)
+	{
+		uint64_t doubleword = typeface.pmap[i];
+		if (x > 0xf)
+		{
+			offset = 3;
+		}
+		for (uint8_t y = col; y < col+typeface.width; y++)
+		{
+			if (doubleword & 1)
+			{
+				screen[(x & 0xf) * HUB75_C + y].color &= ~(WHITE << offset);
+				if (set) screen[(x & 0xf) * HUB75_C + y].color |= color << offset;
+			}
+			doubleword >>= 1;
+		}
+		i++;
+	}
+}

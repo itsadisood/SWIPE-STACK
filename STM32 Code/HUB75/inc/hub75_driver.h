@@ -7,47 +7,36 @@
  * hub75_driver constants and functions
  */
 
-#include "font.h"
-#include "stm32f0xx.h"
+#ifndef __HUB75_DRIVER__
+#define __HUB75_DRIVER__
 
-#define HUB75_H 64 
-#define HUB75_W 32
+#include "typeface.h"
 
-// functions
+#define HUB75_R 16
+#define HUB75_C 64
+#define HUB75_H HUB75_R << 1
+#define MEMSIZE HUB75_R * HUB75_C
 
-// define the pixel
-typedef struct _pixel
+typedef struct
 {
-	uint8_t color : 6;
-} pixel;
+	int color : 6;
+	int latch : 1;
+	int space : 4;
+	int raddr : 5;
+} pixel_t;
 
-// define the structure
-typedef struct _map
-{
-	pixel * pmap;
-	uint8_t height;
-	uint8_t width;
-} map;
-
-// waste CPU clocks 
 void nano_wait (unsigned int);
 
-// initialize GPIO ports A and B for
-// communicating with HUB75 matrix
 void init_io (void);
 
-// bit-bang clock out of GPIOA
-void clock (void);
+void setup_dma (void * addr);
 
-// bit-bang latch out of GPIOA
-void latch (void);
+void ed_dma (bool DMA_FLG);
 
-void writebyte (uint8_t byte, uint8_t color);
+void setup_tim2 (uint32_t psc, uint32_t arr, uint32_t ccr);
 
-// clear HUB75 display
-void fill_disp (uint8_t color);
+void init_screen (pixel_t * screen, hub75_color_t color);
 
-void showchar (uint8_t row, uint8_t color, uint8_t* char_map);
+void sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75_color_t color, bool set);
 
-// bit bang font through GPIOA
-// void draw_font (int, int, int, Font);
+#endif
