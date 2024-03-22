@@ -20,10 +20,12 @@
 
 typedef struct
 {
-	int color : 6;
-	int latch : 1;
-	int space : 4;
-	int raddr : 5;
+	int color  : 6;
+	int space1 : 2;
+	int latch  : 1;
+	int blank  : 1;
+	int space2 : 1;
+	int raddr  : 5;
 } pixel_t;
 
 typedef struct

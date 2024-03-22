@@ -116,7 +116,7 @@ tetris (pixel_t * screen)
 		  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1);
 		  new_piece = false;
 	  }
-	  //nano_wait(50000000);
+	  nano_wait(50000000 / 32);
 	  piece.y_coord--;
 	  if(is_valid_space(locked_positions, piece))
 	  {

@@ -33,9 +33,9 @@ init_io (void)
 {
 	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
 	// clear for the pins
-	GPIOB->MODER &= 0x000fc000;
+	GPIOB->MODER &= 0x000ff000;
 	// set the modes
-	GPIOB->MODER |= 0x55601555;
+	GPIOB->MODER |= 0x55650555;
 	// set the alternate function
 	GPIOB->AFR[1] &= ~(0xf << (4 * 2));
 	GPIOB->AFR[1] |= 0x2 << (4 * 2);
@@ -123,10 +123,12 @@ init_screen (pixel_t * screen, hub75_color_t color)
 			if (y == (HUB75_C - 1))
 			{
 				screen[x * HUB75_C + y].latch = 1;
+				screen[x * HUB75_C + y].blank = 1;
 			}
 			else
 			{
 				screen[x * HUB75_C + y].latch = 0;
+				screen[x * HUB75_C + y].blank = 0;
 			}
 			screen[x * HUB75_C + y].color = (color << 3) + color;
 			screen[x * HUB75_C + y].raddr = (x-1) & 0xf;

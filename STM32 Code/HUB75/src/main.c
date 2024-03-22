@@ -24,6 +24,14 @@ coord_t positions [SHAPE_NUM_PIX];
 int
 main ()
 {
+//debug LED setup
+//  RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+//  GPIOC->MODER |= GPIO_MODER_MODER7_0;
+//  GPIOC->ODR |= 1 << 7;
+//  GPIOC->MODER |= GPIO_MODER_MODER8_0;
+//    GPIOC->ODR |= 1 << 8;
+//
+
   // game_init (screen);
   init_io ();
   setup_dma (screen);
