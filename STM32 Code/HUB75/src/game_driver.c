@@ -77,3 +77,83 @@ setup_adc(void)
   while(!(ADC1->ISR & ADC_ISR_EOC));
 }
 
+/*
+	Upcounting Timer 3 to track elapsed game time
+*/
+void
+setup_tim3 (uint32_t psc, uint32_t arr)
+{
+	// Turn on the clock for timer 3
+	RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
+	// set the clk freq
+	TIM3->PSC = psc-1;
+	TIM3->ARR = arr-1;
+	// Set for Upcounting
+	TIM3->CR1 &= ~TIM_CR1_DIR;
+	TIM3 -> DIER |= TIM_DIER_UIE;
+	// Turn on timer
+	TIM3->CR1 |= TIM_CR1_CEN;
+	NVIC -> ISER[0] |= 0x00010000; // enable tim3 interrupt in NVIC
+}
+
+void
+TIM3_IRQHandler()
+{
+    //TIM3 -> SR = 0xfffe; // clear UIF pending bit by writing a 0 to it. Kp everything else by writing 1.
+	TIM3 -> SR &= ~(TIM_SR_UIF);
+    fall_time += 1;
+
+}
+
+void EXTI0_1_IRQHandler()
+{
+//    EXTI -> PR = 0x1; // clear pending flag for p
+}
+
+void EXTI2_3_IRQHandler()
+{
+    EXTI -> PR = 0x4; // clear pending flag for pc2
+    goRight = true;
+
+}
+
+
+void EXTI4_15_IRQHandler()
+{
+    EXTI -> PR = 0x100; // clear pending flag for pa8
+    goLeft = true;
+}
+
+void init_exti()
+{
+	RCC -> AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOCEN;
+	GPIOA -> MODER &= ~GPIO_MODER_MODER8;
+	GPIOC -> MODER &= ~GPIO_MODER_MODER2;
+	GPIOA -> PUPDR &= ~GPIO_PUPDR_PUPDR8;
+	GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR2;
+	GPIOA -> PUPDR |= GPIO_PUPDR_PUPDR8_1;
+	GPIOC -> PUPDR |= GPIO_PUPDR_PUPDR2_1;
+
+    // 1-2
+    RCC -> APB2ENR |= 0x1; // enable bit 0 (SYSCFGCOMPEN)
+    SYSCFG -> EXTICR[0] &= 0xfffff0ff; // clear port 2
+    SYSCFG -> EXTICR[0] |= 0x00000200; // enable PC2 for EXTI2
+    SYSCFG -> EXTICR[3] &= 0xfffffff0; // clear port 8
+    SYSCFG -> EXTICR[3] |= 0x00000000; // enable PA8 for EXTI8
+
+    // 3
+    // enable rising edge interrupt on PC2, PA8
+    EXTI -> RTSR |= EXTI_RTSR_TR2;
+    EXTI -> RTSR |= EXTI_RTSR_TR8;
+
+    // 4
+    // unmask PC2, PA8 so interrupt can be seen by NVIC
+    EXTI -> IMR |= EXTI_IMR_MR2;
+    EXTI -> IMR |= EXTI_IMR_MR8;
+
+    // 5
+    // enable interrupts for EXTI pins 0-1, 2-3, and 4-15 e = 1110
+    NVIC -> ISER[0] |= 0xe0;
+
+}
+

@@ -8,6 +8,8 @@ uint64_t locked_positions[NUM_ROWS_BOARD + 8] = {0, 0, 0, 0, 0x00000fffffffffff,
 												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 												 0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 0, 0, 0, 0}; // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
 
+
+
 static int 
 gen_rand_int (int lower, int upper)
 {
@@ -101,8 +103,14 @@ lock_pos(uint64_t * locked_positions, Piece_t piece)
 void
 tetris (pixel_t * screen)
 {
+  // initialize some game driver parameters
+  fall_time = 0;
+  goLeft    = false;
+  goRight   = false;
+
   bool new_piece = true;
   game_init (screen);
+  setup_tim3(1000, 10);
   Piece_t piece;
 
   while (1)
@@ -116,23 +124,79 @@ tetris (pixel_t * screen)
 		  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1);
 		  new_piece = false;
 	  }
-	  nano_wait(50000000 / 32);
-	  piece.y_coord--;
-	  if(is_valid_space(locked_positions, piece))
+
+	  //nano_wait(50000000 / 32);
+	  if(fall_time >= 2000)
 	  {
-		  convert_shape_format(positions, piece);
-		  sr_font (screen, piece.x_coord, piece.y_coord + 1, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-		  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
-
-
+		  piece.y_coord -= 2;
+		  if(is_valid_space(locked_positions, piece))
+		  {
+			  convert_shape_format(positions, piece);
+		  	  sr_font (screen, piece.x_coord, piece.y_coord + 2, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
+		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+		  }
+		  else
+		  {
+			  piece.y_coord += 2;
+		  	  new_piece = true;
+		  	  lock_pos(locked_positions, piece);
+		  }
+		  fall_time = 0;
 	  }
-	  else
+
+	  if(goLeft)
 	  {
-		  piece.y_coord++;
-		  new_piece = true;
-
-		  lock_pos(locked_positions, piece);
+		  piece.x_coord -= 2;
+		  if(is_valid_space(locked_positions, piece))
+		  {
+			  convert_shape_format(positions, piece);
+		      sr_font (screen, piece.x_coord + 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
+		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+		  }
+		  else
+		  {
+		  	piece.x_coord += 2;
+		  	new_piece = true;
+		  	lock_pos(locked_positions, piece);
+		  }
+		  goLeft = false;
 	  }
+	  if(goRight)
+	  	  	  {
+		  	  	  piece.rotation = (piece.rotation + 1) % piece.shape.max_rotation;
+	  	  		  if(is_valid_space(locked_positions, piece))
+	  	  		  {
+	  	  			  convert_shape_format(positions, piece);
+	  	  			  int8_t temp = (piece.rotation - 1) % piece.shape.max_rotation;
+	  	  		      sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[(int8_t)((piece.rotation - 1) % piece.shape.max_rotation)], piece.color, 0); // undo prev state
+	  	  		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+	  	  		  }
+	  	  		  else
+	  	  		  {
+	  	  			piece.rotation = (piece.rotation - 1) % piece.shape.max_rotation;
+	  	  		  	new_piece = true;
+	  	  		  	lock_pos(locked_positions, piece);
+	  	  		  }
+	  	  		  goRight = false;
+	  	  	  }
+	  //	  if(goRight)
+	  //	  	  {
+	  //	  		  piece.x_coord += 2;
+	  //	  		  if(is_valid_space(locked_positions, piece))
+	  //	  		  {
+	  //	  			  convert_shape_format(positions, piece);
+	  //	  		      sr_font (screen, piece.x_coord - 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
+	  //	  		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+	  //	  		  }
+	  //	  		  else
+	  //	  		  {
+	  //	  		  	piece.x_coord -= 2;
+	  //	  		  	new_piece = true;
+	  //	  		  	lock_pos(locked_positions, piece);
+	  //	  		  }
+	  //	  		  goRight = false;
+	  //	  	  }
+
   }
   
 }

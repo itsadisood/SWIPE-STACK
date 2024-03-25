@@ -8,6 +8,7 @@
 */
 
 #include "tetris.h"
+#include <sys/queue.h>
 
   uint8_t h [] = {0, 0x7f, 0x08, 0x08, 0x08, 0x7f, 0, 0};
   uint8_t a [] = {0, 0x7c, 0x12, 0x11, 0x12, 0x7c, 0, 0};
@@ -68,6 +69,7 @@ main ()
   // // sr_font (screen, 16, 0, piece_3.shape.pmap[piece_3.rotation], \piece_3.color, 1);
   // // sr_font (screen, 24, 0, piece_4.shape.pmap[piece_4.rotation], piece_4.color, 1);
   // // sr_font (screen, 0, 8, piece_5.shape.pmap[piece_5.rotation], piece_5.color, 1);
+  init_exti();
   tetris (screen);
   convert_shape_format (positions, piece);
 

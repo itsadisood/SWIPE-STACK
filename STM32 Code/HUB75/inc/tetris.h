@@ -11,7 +11,7 @@ typedef struct
   uint8_t y_coord;
   shape_t shape;
   hub75_color_t color;
-  uint8_t rotation;
+  int8_t rotation;
 } Piece_t;
 
 Piece_t piece_init (void);
