@@ -101,7 +101,7 @@ TIM3_IRQHandler()
 {
     //TIM3 -> SR = 0xfffe; // clear UIF pending bit by writing a 0 to it. Kp everything else by writing 1.
 	TIM3 -> SR &= ~(TIM_SR_UIF);
-    fall_time += 1;
+  fall_time += 1;
 
 }
 
@@ -113,7 +113,7 @@ void EXTI0_1_IRQHandler()
 void EXTI2_3_IRQHandler()
 {
     EXTI -> PR = 0x4; // clear pending flag for pc2
-    goRight = true;
+    KEY_RIGHT = true;
 
 }
 
@@ -121,7 +121,7 @@ void EXTI2_3_IRQHandler()
 void EXTI4_15_IRQHandler()
 {
     EXTI -> PR = 0x100; // clear pending flag for pa8
-    goLeft = true;
+    KEY_LEFT = true;
 }
 
 void init_exti()
