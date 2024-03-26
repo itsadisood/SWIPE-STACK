@@ -4,17 +4,24 @@ coord_t positions [SHAPE_NUM_PIX];
 
 // fix locked positions
 
-// uint64_t locked_positions[NUM_ROWS_BOARD + 8] = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
-// 											 	 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-// 												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-// 												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-// 												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-// 												 0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 0, 0, 0, 0}; // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
+uint64_t locked_positions[NUM_ROWS_BOARD + 8] = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
+											 	 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+												 0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 0, 0, 0, 0}; // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
+
+//  uint64_t borders[NUM_ROWS_BOARD + 8]          = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x00000c0000000003, 0x00000c0000000003,
+// 		 	 	 	 	 	 	 	 	 	 	 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
+// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
+// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
+// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
+// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0, 0, 0, 0};
 
 /* 
 suggestion
 - locked positions : array to hold positions of locked blocks
-- borders          : array to stire game borders
+- borders          : array to store game borders
 */
 
 static int 
@@ -62,12 +69,7 @@ convert_shape_format (coord_t * positions, Piece_t piece)
       doubleword >>= 1; 
     }
   }
-  // experimental
-//  for (int i= 0; i < SHAPE_NUM_PIX; i++)
-//  {
-//    positions[i].x = positions[i].x - 2;
-//    positions[i].y = positions[i].y - 4;
-//  }
+
 }
 
 //*************************************************************************************************
@@ -76,7 +78,7 @@ convert_shape_format (coord_t * positions, Piece_t piece)
 // integer elements represent whether a column is occupied or not
 //*************************************************************************************************
 bool
-is_valid_space(uint64_t * locked_positions, Piece_t piece)
+is_valid_space (uint64_t * locked_positions, Piece_t piece)
 {
 	convert_shape_format (positions, piece);
 
@@ -84,9 +86,10 @@ is_valid_space(uint64_t * locked_positions, Piece_t piece)
 	{
 		if((locked_positions[positions[i].x] >> positions[i].y) & 1)
 		{
-			// block is living in invalid space
+			// block is intersecting with another block or the bottom border
 			return false;
 		}
+   // if((locked_positions[positions[i].x] >> positions[i].y) & 1)
 	}
 	return true;
 }
@@ -160,28 +163,24 @@ tetris (pixel_t * screen)
 		  }
 		  else
 		  {
-		  	piece.x_coord += 2;
-		  	new_piece = true;
-		  	lock_pos(locked_positions, piece);
+        piece.x_coord += 2;
 		  }
 		  KEY_LEFT = false;
 	  }
 
 	  if (KEY_RIGHT)
 		{
+      uint8_t prev_rotation = piece.rotation;
 			piece.rotation = (piece.rotation + 1) % piece.shape.max_rotation;
 			if(is_valid_space(locked_positions, piece))
 			{
 				convert_shape_format(positions, piece);
-				int8_t temp = (piece.rotation - 1) % piece.shape.max_rotation;
-				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[(int8_t)((piece.rotation - 1) % piece.shape.max_rotation)], piece.color, 0); // undo prev state
+				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[prev_rotation], piece.color, 0); // undo prev state
 				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
 			}
 			else
 			{
-			piece.rotation = (piece.rotation - 1) % piece.shape.max_rotation;
-				new_piece = true;
-				lock_pos(locked_positions, piece);
+			  piece.rotation = prev_rotation;
 			}
 			KEY_RIGHT = false;
 		}
