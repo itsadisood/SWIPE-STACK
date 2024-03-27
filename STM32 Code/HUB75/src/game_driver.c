@@ -107,26 +107,35 @@ TIM3_IRQHandler()
 
 void EXTI0_1_IRQHandler()
 {
+<<<<<<< HEAD
 	EXTI -> PR = 0x2; // clear pending flag for pc1
 	ROTATE     = true;
+=======
+  // clear pending flag for pc1
+  EXTI -> PR = 0x2;
+  KEY_ROT = true ;
+>>>>>>> 169085ebfda7a4c3531be195294643cbb9dc4e3a
 }
 
 void EXTI2_3_IRQHandler()
 {
-    EXTI -> PR = 0x4; // clear pending flag for pc2
-    KEY_RIGHT = true;
+  // clear pending flag for pc2
+  EXTI -> PR = 0x4; // clear pending flag for pc2
+  KEY_RIGHT = true;
 
 }
 
 
 void EXTI4_15_IRQHandler()
 {
-    EXTI -> PR = 0x100; // clear pending flag for pa8
-    KEY_LEFT = true;
+  // clear pending flag for pa8
+  EXTI -> PR = 0x100; // clear pending flag for pa8
+  KEY_LEFT = true;
 }
 
 void init_exti()
 {
+<<<<<<< HEAD
 	RCC -> AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOCEN;
 	GPIOA -> MODER &= ~GPIO_MODER_MODER8;
 	GPIOC -> MODER &= ~GPIO_MODER_MODER2;
@@ -162,5 +171,41 @@ void init_exti()
     // enable interrupts for EXTI pins 0-1, 2-3, and 4-15 e = 1110
     NVIC -> ISER[0] |= 0xe0;
 
+=======
+  RCC -> AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOCEN;
+  GPIOA -> MODER &= ~GPIO_MODER_MODER8;
+  GPIOC -> MODER &= ~GPIO_MODER_MODER2;
+  GPIOC -> MODER &= ~GPIO_MODER_MODER1;
+  GPIOA -> PUPDR &= ~GPIO_PUPDR_PUPDR8;
+  GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR2;
+  GPIOC -> PUPDR &= ~GPIO_PUPDR_PUPDR1;
+  GPIOA -> PUPDR |= GPIO_PUPDR_PUPDR8_1;
+  GPIOC -> PUPDR |= GPIO_PUPDR_PUPDR2_1;
+  GPIOC -> PUPDR |= GPIO_PUPDR_PUPDR1_1;
+
+  // 1-2
+  RCC -> APB2ENR |= 0x1; // enable bit 0 (SYSCFGCOMPEN)
+  SYSCFG -> EXTICR[0] &= 0xfffff00f; // clear port 2 and 1
+  SYSCFG -> EXTICR[0] |= 0x00000200; // enable PC2 for EXTI2
+  SYSCFG -> EXTICR[0] |= 0x00000020; // enable PC1 for EXTI2
+  SYSCFG -> EXTICR[3] &= 0xfffffff0; // clear port 8
+  SYSCFG -> EXTICR[3] |= 0x00000000; // enable PA8 for EXTI8
+
+  // 3
+  // enable rising edge interrupt on PC2, PA8, PC1
+  EXTI -> RTSR |= EXTI_RTSR_TR2;
+  EXTI -> RTSR |= EXTI_RTSR_TR8;
+  EXTI -> RTSR |= EXTI_RTSR_TR1;
+
+  // 4
+  // unmask PC2, PA8 so interrupt can be seen by NVIC
+  EXTI -> IMR |= EXTI_IMR_MR2;
+  EXTI -> IMR |= EXTI_IMR_MR8;
+  EXTI -> IMR |= EXTI_IMR_MR1;
+
+  // 5
+  // enable interrupts for EXTI pins 0-1, 2-3, and 4-15 e = 1110
+  NVIC -> ISER[0] |= 0xe0;
+>>>>>>> 169085ebfda7a4c3531be195294643cbb9dc4e3a
 }
 
