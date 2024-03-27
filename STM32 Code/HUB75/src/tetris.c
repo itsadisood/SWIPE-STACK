@@ -116,6 +116,49 @@ is_valid_space (uint64_t * locked_positions, Piece_t piece)
 	return true;
 }
 
+bool
+check_row (uint8_t s, uint64_t mask)
+{
+	uint64_t mask = 0xc;
+	uint64_t prev, curr;
+	for (int i = 0; i < NUM_ROWS_BOARD + 2; i++)
+	{
+		prev = locked_positions [s + i] & mask;
+		curr = locked_positions [s + i + 1] & mask;
+
+		if (prev != curr)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+void 
+check_clear ()
+{
+	uint8_t size;
+	uint64_t mask = 0xc;
+
+	size = 0;
+	for (int i = 0; i < NUM_COLS_BOARD / 2; i++)
+	{
+		if (check_row (6, mask))
+		{
+			size++;
+		}
+		mask <<= 2;
+	}
+
+	uint8_t * cols = malloc (size * sizeof(uint64_t));
+	for (int i = 0; i < NUM_COLS_BOARD; i++)
+	[
+		cols[i] = i;
+	]
+
+	return cols;
+}
+
 //*************************************************************************************************
 // lock_pos will append the position of a stoppied piece into the locked_positions array
 // The position will be locked until a row is cleared or the game ends
@@ -139,6 +182,7 @@ tetris (pixel_t * screen)
   fall_time = 0;
   KEY_LEFT  = false;
   KEY_RIGHT = false;
+	KEY_ROT   = false;
 
   bool new_piece = true;
   game_init (screen);
@@ -179,6 +223,8 @@ tetris (pixel_t * screen)
 				// set for new piece fetch
 				new_piece = true;
 				lock_pos(locked_positions, piece);
+				// check if any rows can be cleared
+				check_rows ();
 		  }
 
 		  fall_time = 0;
