@@ -4,6 +4,7 @@
 #include "hub75_driver.h"
 
 volatile bool KEY_LEFT;
+volatile bool KEY_ROT;
 volatile bool KEY_RIGHT;
 
 // fall time for blocks

@@ -1,15 +1,21 @@
 #include "tetris.h"
 
 coord_t positions [SHAPE_NUM_PIX];
+coord_t p_positions [SHAPE_NUM_PIX];
 
 // fix locked positions
-
-uint64_t locked_positions[NUM_ROWS_BOARD + 8] = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
-											 	 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-												 0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-												 0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 0, 0, 0, 0}; // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
+// 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
+uint64_t locked_positions[NUM_ROWS_BOARD + 8] = 
+{
+	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 
+	0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 
+	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
+};
 
 //  uint64_t borders[NUM_ROWS_BOARD + 8]          = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x00000c0000000003, 0x00000c0000000003,
 // 		 	 	 	 	 	 	 	 	 	 	 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
@@ -42,8 +48,8 @@ piece_init (void)
 
   // initialize the piece values
   Piece_t new_piece;
-  new_piece.x_coord = 12; // start piece in middle-top of grid
-  new_piece.y_coord = 46;
+  new_piece.x_coord = 19; // start piece in middle-top of grid
+  new_piece.y_coord = 49;
   new_piece.shape = get_shape (rand_idx);
   new_piece.color = get_shape_color (rand_idx);
   new_piece.rotation = 0;
@@ -60,16 +66,30 @@ convert_shape_format (coord_t * positions, Piece_t piece)
     uint64_t doubleword = format.pmap[i];
     for (int j = 0; j < format.width; j++)
     {
-      if (doubleword & 1)
+      if ((doubleword & 1))
       {
-        positions[pos].x = piece.x_coord + i;
-        positions[pos].y = piece.y_coord + j;
+				if ((piece.y_coord - i) <= 41)
+				{
+					positions[pos].x = piece.x_coord - j;
+					positions[pos].y = piece.y_coord - i;
+				}
+				else
+				{
+					positions[pos].x = 255;
+					positions[pos].y = 255;
+				}
         pos++;
       }
       doubleword >>= 1; 
     }
   }
+}
 
+void
+move_shape (pixel_t * screen, Piece_t piece)
+{
+  sr_coord (screen, p_positions, piece.color, 0); // undo prev state
+	sr_coord (screen, positions, piece.color, 1); // form new state
 }
 
 //*************************************************************************************************
@@ -80,16 +100,18 @@ convert_shape_format (coord_t * positions, Piece_t piece)
 bool
 is_valid_space (uint64_t * locked_positions, Piece_t piece)
 {
-	convert_shape_format (positions, piece);
+	// convert_shape_format (positions, piece);
 
 	for(int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
-		if((locked_positions[positions[i].x] >> positions[i].y) & 1)
+		if((positions[i].x != 255) && (positions[i].y != 255))
 		{
-			// block is intersecting with another block or the bottom border
-			return false;
+			if((locked_positions[positions[i].x] >> positions[i].y) & 1)
+			{
+				// block is intersecting with another block or the bottom border
+				return false;
+			}
 		}
-   // if((locked_positions[positions[i].x] >> positions[i].y) & 1)
 	}
 	return true;
 }
@@ -101,7 +123,7 @@ is_valid_space (uint64_t * locked_positions, Piece_t piece)
 void
 lock_pos(uint64_t * locked_positions, Piece_t piece)
 {
-	convert_shape_format (positions, piece);
+	// convert_shape_format (positions, piece);
 	uint64_t shifter = 1;
 
 	for(int i = 0; i < SHAPE_NUM_PIX; i++)
@@ -123,85 +145,111 @@ tetris (pixel_t * screen)
   setup_tim3(1000, 10);
   Piece_t piece;
 
-  while (1)
+  while (true)
   {
-    /* code */
-
-	  if(new_piece)
+	  if (new_piece)
 	  {
+			// fetch new piece
 		  piece = piece_init();
-		  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1);
+
+			// blit onto screen
+			convert_shape_format (positions, piece);
+		  sr_coord (screen, positions, piece.color, 1);
+
 		  new_piece = false;
 	  }
-
-	  if(fall_time >= 2000)
+		// fall dowm
+	  else if (fall_time >= 200)
 	  {
+			// new position
 		  piece.y_coord -= 2;
-		  if(is_valid_space(locked_positions, piece))
+			convert_shape_format(positions, piece);
+
+		  if(is_valid_space (locked_positions, piece))
 		  {
-			  convert_shape_format(positions, piece);
-				sr_font (screen, piece.x_coord, piece.y_coord + 2, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+				// move shape to new position
+				move_shape (screen, piece);
 		  }
 		  else
 		  {
+				// restore shape
 			  piece.y_coord += 2;
+				memcpy (positions, p_positions, sizeof (p_positions));
+
+				// set for new piece fetch
 				new_piece = true;
 				lock_pos(locked_positions, piece);
 		  }
+
 		  fall_time = 0;
 	  }
-
-	  if (KEY_LEFT)
+		// move left
+	  else if (KEY_LEFT)
 	  {
+			// new position
 		  piece.x_coord -= 2;
+			convert_shape_format(positions, piece);
+
 		  if(is_valid_space(locked_positions, piece))
 		  {
-			  convert_shape_format(positions, piece);
-				sr_font (screen, piece.x_coord + 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+			  // move shape to new position
+				move_shape (screen, piece);
 		  }
 		  else
 		  {
+				// restore shape
         piece.x_coord += 2;
+				memcpy (positions, p_positions, sizeof (p_positions));
 		  }
+
 		  KEY_LEFT = false;
 	  }
+		// move right
+		else if (KEY_RIGHT)
+	  {
+			// new position
+		  piece.x_coord += 2;
+			convert_shape_format(positions, piece);
 
-	  if (KEY_RIGHT)
+		  if(is_valid_space(locked_positions, piece))
+		  {
+			  // move shape to new position
+				move_shape (screen, piece);
+		  }
+		  else
+		  {
+				// restore shape
+        piece.x_coord -= 2;
+				memcpy (positions, p_positions, sizeof (p_positions));
+		  }
+
+		  KEY_RIGHT = false;
+	  }
+		// rotation
+	  else if (KEY_ROT)
 		{
-      uint8_t prev_rotation = piece.rotation;
+			uint8_t prev_rotation = piece.rotation;
+
+			// new rotation
 			piece.rotation = (piece.rotation + 1) % piece.shape.max_rotation;
-			if(is_valid_space(locked_positions, piece))
+			convert_shape_format(positions, piece);
+
+			if(is_valid_space (locked_positions, piece))
 			{
-				convert_shape_format(positions, piece);
-				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[prev_rotation], piece.color, 0); // undo prev state
-				sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+				// move shape to new position
+				move_shape (screen, piece);
 			}
 			else
 			{
+				// restore shape
 			  piece.rotation = prev_rotation;
+				memcpy (positions, p_positions, sizeof (p_positions));
 			}
-			KEY_RIGHT = false;
-		}
-	  //	  if(goRight)
-	  //	  	  {
-	  //	  		  piece.x_coord += 2;
-	  //	  		  if(is_valid_space(locked_positions, piece))
-	  //	  		  {
-	  //	  			  convert_shape_format(positions, piece);
-	  //	  		      sr_font (screen, piece.x_coord - 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-	  //	  		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
-	  //	  		  }
-	  //	  		  else
-	  //	  		  {
-	  //	  		  	piece.x_coord -= 2;
-	  //	  		  	new_piece = true;
-	  //	  		  	lock_pos(locked_positions, piece);
-	  //	  		  }
-	  //	  		  goRight = false;
-	  //	  	  }
 
+			KEY_ROT = false;
+		}
+
+		// update the previous
+		memcpy (p_positions, positions, sizeof(positions));
   }
-  
 }
