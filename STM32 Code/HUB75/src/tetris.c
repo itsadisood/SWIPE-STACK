@@ -134,7 +134,7 @@ tetris (pixel_t * screen)
 		  new_piece = false;
 	  }
 
-	  if(fall_time >= 2000)
+	  if(fall_time >= 200)
 	  {
 		  piece.y_coord -= 2;
 		  if(is_valid_space(locked_positions, piece))
@@ -168,9 +168,9 @@ tetris (pixel_t * screen)
 		  KEY_LEFT = false;
 	  }
 
-	  if (KEY_RIGHT)
+	  if (ROTATE)
 		{
-      uint8_t prev_rotation = piece.rotation;
+		    uint8_t prev_rotation = piece.rotation;
 			piece.rotation = (piece.rotation + 1) % piece.shape.max_rotation;
 			if(is_valid_space(locked_positions, piece))
 			{
@@ -182,25 +182,25 @@ tetris (pixel_t * screen)
 			{
 			  piece.rotation = prev_rotation;
 			}
-			KEY_RIGHT = false;
+			ROTATE = false;
 		}
-	  //	  if(goRight)
-	  //	  	  {
-	  //	  		  piece.x_coord += 2;
-	  //	  		  if(is_valid_space(locked_positions, piece))
-	  //	  		  {
-	  //	  			  convert_shape_format(positions, piece);
-	  //	  		      sr_font (screen, piece.x_coord - 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-	  //	  		  	  sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
-	  //	  		  }
-	  //	  		  else
-	  //	  		  {
-	  //	  		  	piece.x_coord -= 2;
-	  //	  		  	new_piece = true;
-	  //	  		  	lock_pos(locked_positions, piece);
-	  //	  		  }
-	  //	  		  goRight = false;
-	  //	  	  }
+	  	if(KEY_RIGHT)
+	  	{
+	  	  piece.x_coord += 2;
+	  	  if(is_valid_space(locked_positions, piece))
+	  	  {
+	  	    convert_shape_format(positions, piece);
+	  	    sr_font (screen, piece.x_coord - 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
+	  	    sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
+	  	  }
+	  	  else
+	  	  {
+	  	    piece.x_coord -= 2;
+	  	    new_piece = true;
+	  	  	lock_pos(locked_positions, piece);
+	  	  }
+	  	    KEY_RIGHT = false;
+	  	  }
 
   }
   

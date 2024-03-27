@@ -5,6 +5,7 @@
 
 volatile bool KEY_LEFT;
 volatile bool KEY_RIGHT;
+volatile bool ROTATE;
 
 // fall time for blocks
 volatile uint32_t fall_time;
