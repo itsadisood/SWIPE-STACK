@@ -71,9 +71,10 @@ main ()
   // // sr_font (screen, 0, 8, piece_5.shape.pmap[piece_5.rotation], piece_5.color, 1);
   init_exti();
   tetris (screen);
-  convert_shape_format (positions, piece);
+  //init_screen (screen, BLACK); // GAME OVER
+  //convert_shape_format (positions, piece);
 
-  sr_coord (screen, positions, piece.color, 1);
+  //sr_coord (screen, positions, piece.color, 1);
 
 
   //sr_font (screen, 7, 19, piece_2.shape.pmap[piece_2.rotation], piece_2.color, 1);

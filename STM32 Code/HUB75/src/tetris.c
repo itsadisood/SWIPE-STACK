@@ -1,5 +1,7 @@
 #include "tetris.h"
 
+# define TEST 0x3fffffffffc
+
 coord_t positions [SHAPE_NUM_PIX];
 coord_t p_positions [SHAPE_NUM_PIX];
 
@@ -8,12 +10,12 @@ coord_t p_positions [SHAPE_NUM_PIX];
 uint64_t locked_positions[NUM_ROWS_BOARD + 8] = 
 {
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 
-	0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
+	0xffffffffffffffff, 0xffffffffffffffff, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-	0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff, 
+	0x0000000000000003, 0x0000000000000003, 0xffffffffffffffff, 0xffffffffffffffff,
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
 
@@ -116,17 +118,20 @@ is_valid_space (uint64_t * locked_positions, Piece_t piece)
 	return true;
 }
 
+// iterate through column 6 to column 25 of some row, but quit when there is not a filled pixel
 bool
 check_row (uint8_t s, uint64_t mask)
 {
-	uint64_t mask = 0xc;
 	uint64_t prev, curr;
-	for (int i = 0; i < NUM_ROWS_BOARD + 2; i++)
+	for(int i = 0; i < NUM_ROWS_BOARD - 5; i++) // i is [0,18], so s + i is [6,24] and s + i + 1 is [7,25]
 	{
 		prev = locked_positions [s + i] & mask;
 		curr = locked_positions [s + i + 1] & mask;
 
-		if (prev != curr)
+    if (!prev) return false;
+    if (!curr) return false;
+
+		if ((prev != curr))
 		{
 			return false;
 		}
@@ -134,29 +139,32 @@ check_row (uint8_t s, uint64_t mask)
 	return true;
 }
 
-void 
+uint32_t
 check_clear ()
 {
-	uint8_t size;
+	uint32_t cols = 0;
 	uint64_t mask = 0xc;
 
-	size = 0;
-	for (int i = 0; i < NUM_COLS_BOARD / 2; i++)
+	for (int i = 0; i < (NUM_COLS_BOARD - 4) / 2; i++)
 	{
 		if (check_row (6, mask))
 		{
-			size++;
+			cols |= 1 << i;
 		}
 		mask <<= 2;
 	}
 
-	uint8_t * cols = malloc (size * sizeof(uint64_t));
-	for (int i = 0; i < NUM_COLS_BOARD; i++)
-	[
-		cols[i] = i;
-	]
-
 	return cols;
+
+	// uint8_t * cols = malloc (size * sizeof(uint8_t));
+	// for (int i = 0; i < NUM_COLS_BOARD; i++)
+	// {
+	// 	if (check_row (6, mask))
+	// 	{
+			
+	// 		// cols |= 1 << i;
+	// 	}
+  // }
 }
 
 //*************************************************************************************************
@@ -175,6 +183,42 @@ lock_pos(uint64_t * locked_positions, Piece_t piece)
 	}
 }
 
+void 
+update_lock_pos (int col)
+{
+	col *= 2;
+  uint64_t upper, lower;
+  for(int s = 6; s < 26; s++)
+  {
+    // // clear row
+    // locked_positions[s] &= ~(0xc << col);
+
+    // get tthe lower loc_pos
+    lower = locked_positions[s] & ((TEST >> (40 - col)));
+
+    // get the upper loc_pos
+    upper = locked_positions[s] & (TEST << (col + 2));
+    upper >>= 2; 
+
+    locked_positions[s] = upper | lower; 
+  }
+}
+
+bool
+lose_cond ()
+{
+  // check [14], [15], [16], [17]
+  for(int i = 14; i < 18; i++)
+  {
+    if(((locked_positions[i] & (0x20000000000)) >> 41))
+	  {
+    	return true;
+	  }
+  }
+  return false;
+
+}
+
 void
 tetris (pixel_t * screen)
 {
@@ -182,15 +226,20 @@ tetris (pixel_t * screen)
   fall_time = 0;
   KEY_LEFT  = false;
   KEY_RIGHT = false;
-	KEY_ROT   = false;
+  KEY_ROT   = false;
 
   bool new_piece = true;
   game_init (screen);
   setup_tim3(1000, 10);
   Piece_t piece;
+  int rowsCleared = 0;
 
   while (true)
   {
+	  if(lose_cond())
+	  {
+	    return;
+	  }
 	  if (new_piece)
 	  {
 			// fetch new piece
@@ -202,13 +251,8 @@ tetris (pixel_t * screen)
 
 		  new_piece = false;
 	  }
-<<<<<<< HEAD
-
-	  if(fall_time >= 200)
-=======
 		// fall dowm
-	  else if (fall_time >= 200)
->>>>>>> 169085ebfda7a4c3531be195294643cbb9dc4e3a
+	  else if (fall_time >= 100)
 	  {
 			// new position
 		  piece.y_coord -= 2;
@@ -229,10 +273,25 @@ tetris (pixel_t * screen)
 				new_piece = true;
 				lock_pos(locked_positions, piece);
 				// check if any rows can be cleared
-				check_rows ();
+				uint32_t cols = check_clear ();
+				if(cols != 0)
+				{
+          for(int i = 0; i < (NUM_COLS_BOARD - 4) / 2; i++)
+          {
+            if((cols >> i) & 1)
+            {
+              clear_row(screen, i - rowsCleared);
+              update_lock_pos (i - rowsCleared); // i is col
+              drop_rows (screen, i + 1 - rowsCleared);
+              rowsCleared++;
+            }
+          }
+				}
+
 		  }
 
 		  fall_time = 0;
+		  rowsCleared = 0;
 	  }
 		// move left
 	  else if (KEY_LEFT)
@@ -274,11 +333,6 @@ tetris (pixel_t * screen)
 				memcpy (positions, p_positions, sizeof (p_positions));
 		  }
 
-<<<<<<< HEAD
-	  if (ROTATE)
-		{
-		    uint8_t prev_rotation = piece.rotation;
-=======
 		  KEY_RIGHT = false;
 	  }
 		// rotation
@@ -287,7 +341,6 @@ tetris (pixel_t * screen)
 			uint8_t prev_rotation = piece.rotation;
 
 			// new rotation
->>>>>>> 169085ebfda7a4c3531be195294643cbb9dc4e3a
 			piece.rotation = (piece.rotation + 1) % piece.shape.max_rotation;
 			convert_shape_format(positions, piece);
 
@@ -302,31 +355,9 @@ tetris (pixel_t * screen)
 			  piece.rotation = prev_rotation;
 				memcpy (positions, p_positions, sizeof (p_positions));
 			}
-<<<<<<< HEAD
-			ROTATE = false;
-		}
-	  	if(KEY_RIGHT)
-	  	{
-	  	  piece.x_coord += 2;
-	  	  if(is_valid_space(locked_positions, piece))
-	  	  {
-	  	    convert_shape_format(positions, piece);
-	  	    sr_font (screen, piece.x_coord - 2, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 0); // undo prev state
-	  	    sr_font (screen, piece.x_coord, piece.y_coord, piece.shape.pmap[piece.rotation], piece.color, 1); // form new state
-	  	  }
-	  	  else
-	  	  {
-	  	    piece.x_coord -= 2;
-	  	    new_piece = true;
-	  	  	lock_pos(locked_positions, piece);
-	  	  }
-	  	    KEY_RIGHT = false;
-	  	  }
-=======
 
 			KEY_ROT = false;
 		}
->>>>>>> 169085ebfda7a4c3531be195294643cbb9dc4e3a
 
 		// update the previous
 		memcpy (p_positions, positions, sizeof(positions));

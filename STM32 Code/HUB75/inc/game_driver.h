@@ -14,6 +14,10 @@ volatile uint32_t fall_time;
 
 void game_init (pixel_t * screen);
 
+void clear_row (pixel_t * screen, int y);
+
+void drop_rows (pixel_t * screen, int row);
+
 void setup_adc (void);
 
 void setup_tim3(uint32_t psc, uint32_t arr); // setup game timer
