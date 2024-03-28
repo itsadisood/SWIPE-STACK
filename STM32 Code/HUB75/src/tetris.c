@@ -9,13 +9,13 @@ coord_t p_positions [SHAPE_NUM_PIX];
 // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
 uint64_t locked_positions[NUM_ROWS_BOARD + 8] = 
 {
-	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 
-	0xffffffffffffffff, 0xffffffffffffffff, 0x0000000000000003, 0x0000000000000003,
+	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+	0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-	0x0000000000000003, 0x0000000000000003, 0xffffffffffffffff, 0xffffffffffffffff,
+	0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff,
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
 
@@ -51,7 +51,7 @@ piece_init (void)
   // initialize the piece values
   Piece_t new_piece;
   new_piece.x_coord = 19; // start piece in middle-top of grid
-  new_piece.y_coord = 49;
+  new_piece.y_coord = 47;
   new_piece.shape = get_shape (rand_idx);
   new_piece.color = get_shape_color (rand_idx);
   new_piece.rotation = 0;
@@ -252,7 +252,7 @@ tetris (pixel_t * screen)
 		  new_piece = false;
 	  }
 		// fall dowm
-	  else if (fall_time >= 100)
+	  else if (fall_time >= 300)
 	  {
 			// new position
 		  piece.y_coord -= 2;
@@ -318,7 +318,10 @@ tetris (pixel_t * screen)
 		else if (KEY_RIGHT)
 	  {
 			// new position
-		  piece.x_coord += 2;
+			if(piece.y_coord <= 49) // INCLUDE CROPPED SHAPE HEIGHT 
+			{
+				piece.x_coord += 2;
+			}
 			convert_shape_format(positions, piece);
 
 		  if(is_valid_space(locked_positions, piece))
