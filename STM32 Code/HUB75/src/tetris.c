@@ -1,76 +1,37 @@
 #include "tetris.h"
 
-# define TEST 0x3fffffffffc
-
-coord_t positions [SHAPE_NUM_PIX];
+// fixed size arrays
+coord_t positions   [SHAPE_NUM_PIX];
 coord_t p_positions [SHAPE_NUM_PIX];
+Piece_t shape_queue [QUEUE_SIZE];
 
 // fix locked positions
 // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
 uint64_t locked_positions[NUM_ROWS_BOARD + 8] = 
 {
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
-	0x00000fffffffffff, 0x00000fffffffffff, 0x0000000000000003, 0x0000000000000003,
+	0xffffffffffffffff, 0xffffffffffffffff, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
 	0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
-	0x0000000000000003, 0x0000000000000003, 0x00000fffffffffff, 0x00000fffffffffff,
+	0x0000000000000003, 0x0000000000000003, 0xffffffffffffffff, 0xffffffffffffffff,
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
-
-//  uint64_t borders[NUM_ROWS_BOARD + 8]          = {0, 0, 0, 0, 0x00000fffffffffff, 0x00000fffffffffff, 0x00000c0000000003, 0x00000c0000000003,
-// 		 	 	 	 	 	 	 	 	 	 	 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
-// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
-// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
-// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003,
-// 												 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0x00000c0000000003, 0, 0, 0, 0};
-
-/* 
-suggestion
-- locked positions : array to hold positions of locked blocks
-- borders          : array to store game borders
-*/
-
-static int 
-gen_rand_int (int lower, int upper)
-{
-  // Seed the random number generator using the current time
-  uint64_t curr_seed = rand ();
-  srand(curr_seed);
-  // uint64_t random_number = (rand() % (upper - lower + 1)) + lower;
-  return ((rand() % (upper - lower + 1)) + lower);
-}
-
-Piece_t
-piece_init (void)
-{
-  // get the random value
-  int rand_idx = gen_rand_int (0, 6);
-
-  // initialize the piece values
-  Piece_t new_piece;
-  new_piece.x_coord = 19; // start piece in middle-top of grid
-  new_piece.y_coord = 47;
-  new_piece.shape = get_shape (rand_idx);
-  new_piece.color = get_shape_color (rand_idx);
-  new_piece.rotation = 0;
-  return new_piece;
-}
 
 void
 convert_shape_format (coord_t * positions, Piece_t piece)
 {
   uint8_t pos = 0;
   map_t format = piece.shape.pmap[piece.rotation];
-  for (int i = 0; i < format.height; i++)
+  for (int i = 0; i < SHAPE_H; i++)
   {
     uint64_t doubleword = format.pmap[i];
-    for (int j = 0; j < format.width; j++)
+    for (int j = 0; j < SHAPE_W; j++)
     {
       if ((doubleword & 1))
       {
-				if ((piece.y_coord - i) <= 41)
+				if ((piece.y_coord - i) <= 43)
 				{
 					positions[pos].x = piece.x_coord - j;
 					positions[pos].y = piece.y_coord - i;
@@ -90,8 +51,10 @@ convert_shape_format (coord_t * positions, Piece_t piece)
 void
 move_shape (pixel_t * screen, Piece_t piece)
 {
-  sr_coord (screen, p_positions, piece.color, 0); // undo prev state
-	sr_coord (screen, positions, piece.color, 1); // form new state
+	// undo prev state
+  sr_coord (screen, p_positions, piece.color, 0);
+	// form new state
+	sr_coord (screen, positions, piece.color, 1);
 }
 
 //*************************************************************************************************
@@ -155,16 +118,27 @@ check_clear ()
 	}
 
 	return cols;
+}
 
-	// uint8_t * cols = malloc (size * sizeof(uint8_t));
-	// for (int i = 0; i < NUM_COLS_BOARD; i++)
-	// {
-	// 	if (check_row (6, mask))
-	// 	{
-			
-	// 		// cols |= 1 << i;
-	// 	}
-  // }
+void
+row_check (pixel_t * screen)
+{
+	int rows_cleared = 0;
+	uint32_t cols = check_clear ();
+
+	if (cols != 0)
+	{
+		for (int i = 0; i < (NUM_COLS_BOARD - 4) / 2; i++)
+		{
+			if ((cols >> i) & 1)
+			{
+				clear_row(screen, i - rows_cleared);
+				update_lock_pos (i - rows_cleared); 
+				drop_rows (screen, i + 1 - rows_cleared);
+				rows_cleared++;
+			}
+		}
+	}
 }
 
 //*************************************************************************************************
@@ -177,7 +151,7 @@ lock_pos(uint64_t * locked_positions, Piece_t piece)
 	// convert_shape_format (positions, piece);
 	uint64_t shifter = 1;
 
-	for(int i = 0; i < SHAPE_NUM_PIX; i++)
+	for (int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
 		locked_positions[positions[i].x] |= shifter << positions[i].y;
 	}
@@ -188,40 +162,46 @@ update_lock_pos (int col)
 {
 	col *= 2;
   uint64_t upper, lower;
-  for(int s = 6; s < 26; s++)
+  for (int s = 6; s < 26; s++)
   {
-    // // clear row
-    // locked_positions[s] &= ~(0xc << col);
-
     // get tthe lower loc_pos
-    lower = locked_positions[s] & ((TEST >> (40 - col)));
+    lower = locked_positions[s] & ((ROW_MASK >> (40 - col)));
 
     // get the upper loc_pos
-    upper = locked_positions[s] & (TEST << (col + 2));
+    upper = locked_positions[s] & (ROW_MASK << (col + 2));
     upper >>= 2; 
 
     locked_positions[s] = upper | lower; 
   }
 }
 
-bool
-lose_cond ()
+Piece_t
+update_shape_queue (pixel_t * screen)
 {
-  // check [14], [15], [16], [17]
-  for(int i = 14; i < 18; i++)
-  {
-    if(((locked_positions[i] & (0x20000000000)) >> 41))
-	  {
-    	return true;
-	  }
-  }
-  return false;
+	Piece_t piece = dequeue_shape (shape_queue);
+	enqueue_shape (shape_queue);
+	disp_shape_queue (shape_queue, screen);
+	return piece;
+}
 
+bool
+check_loss ()
+{
+	for (int i = 0; i < SHAPE_NUM_PIX; i++)
+	{
+		if (positions[i].y > 41)
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void
 tetris (pixel_t * screen)
 {
+	// initialize game pieces
+	Piece_t piece;
   // initialize some game driver parameters
   fall_time = 0;
   KEY_LEFT  = false;
@@ -231,20 +211,15 @@ tetris (pixel_t * screen)
   bool new_piece = true;
   game_init (screen);
   setup_tim3(1000, 10);
-  Piece_t piece;
-  int rowsCleared = 0;
+
+	init_shape_queue (shape_queue);
+	piece = update_shape_queue (screen);
 
   while (true)
   {
-	  if(lose_cond())
-	  {
-	    return;
-	  }
 	  if (new_piece)
 	  {
-			// fetch new piece
-		  piece = piece_init();
-
+			piece = update_shape_queue (screen);
 			// blit onto screen
 			convert_shape_format (positions, piece);
 		  sr_coord (screen, positions, piece.color, 1);
@@ -269,48 +244,39 @@ tetris (pixel_t * screen)
 			  piece.y_coord += 2;
 				memcpy (positions, p_positions, sizeof (p_positions));
 
+				if (check_loss ()) break;
+
 				// set for new piece fetch
 				new_piece = true;
 				lock_pos(locked_positions, piece);
-				// check if any rows can be cleared
-				uint32_t cols = check_clear ();
-				if(cols != 0)
-				{
-          for(int i = 0; i < (NUM_COLS_BOARD - 4) / 2; i++)
-          {
-            if((cols >> i) & 1)
-            {
-              clear_row(screen, i - rowsCleared);
-              update_lock_pos (i - rowsCleared); // i is col
-              drop_rows (screen, i + 1 - rowsCleared);
-              rowsCleared++;
-            }
-          }
-				}
 
+				// check if any rows can be cleared
+				row_check (screen);
 		  }
 
 		  fall_time = 0;
-		  rowsCleared = 0;
 	  }
 		// move left
 	  else if (KEY_LEFT)
 	  {
 			// new position
-		  piece.x_coord -= 2;
-			convert_shape_format(positions, piece);
+			if (piece.y_coord <= (47 - piece.shape.pmap->height))
+			{
+				piece.x_coord -= 2;
+				convert_shape_format(positions, piece);
 
-		  if(is_valid_space(locked_positions, piece))
-		  {
-			  // move shape to new position
-				move_shape (screen, piece);
-		  }
-		  else
-		  {
-				// restore shape
-        piece.x_coord += 2;
-				memcpy (positions, p_positions, sizeof (p_positions));
-		  }
+				if(is_valid_space(locked_positions, piece))
+				{
+					// move shape to new position
+					move_shape (screen, piece);
+				}
+				else
+				{
+					// restore shape
+					piece.x_coord += 2;
+					memcpy (positions, p_positions, sizeof (p_positions));
+				}
+			}
 
 		  KEY_LEFT = false;
 	  }
@@ -318,23 +284,23 @@ tetris (pixel_t * screen)
 		else if (KEY_RIGHT)
 	  {
 			// new position
-			if(piece.y_coord <= 49) // INCLUDE CROPPED SHAPE HEIGHT 
+			if(piece.y_coord <= (47 - piece.shape.pmap->height)) // INCLUDE CROPPED SHAPE HEIGHT
 			{
 				piece.x_coord += 2;
-			}
-			convert_shape_format(positions, piece);
+				convert_shape_format(positions, piece);
 
-		  if(is_valid_space(locked_positions, piece))
-		  {
-			  // move shape to new position
-				move_shape (screen, piece);
-		  }
-		  else
-		  {
-				// restore shape
-        piece.x_coord -= 2;
-				memcpy (positions, p_positions, sizeof (p_positions));
-		  }
+				if(is_valid_space(locked_positions, piece))
+				{
+					// move shape to new position
+					move_shape (screen, piece);
+				}
+				else
+				{
+					// restore shape
+					piece.x_coord -= 2;
+					memcpy (positions, p_positions, sizeof (p_positions));
+				}
+			}
 
 		  KEY_RIGHT = false;
 	  }
@@ -365,4 +331,6 @@ tetris (pixel_t * screen)
 		// update the previous
 		memcpy (p_positions, positions, sizeof(positions));
   }
+
+	init_screen (screen, BLACK);
 }

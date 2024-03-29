@@ -1,7 +1,5 @@
 # include "game_driver.h"
 
-volatile uint64_t global_count = 0;
-
 static void 
 board_init (pixel_t * screen)
 {
@@ -19,9 +17,24 @@ game_init (pixel_t * screen)
   // enable dma transfers
   ed_dma (1);
 
-  // create the initial game screen
+  // clear screen
   init_screen (screen, BLACK);
+
+  // init the game board
   board_init (screen);
+
+  // enable interrupts 
+  init_exti();
+}
+
+void 
+set_random_seed ()
+{
+  // turn on the ADC
+  setup_adc ();
+
+  // rand_seed = (ADC->DR & 0xf) ** 5 
+  srand (pow (ADC1->DR & 0xf, 5));
 }
 
 void 
@@ -74,31 +87,6 @@ drop_rows (pixel_t * screen, int row)
   }
 }
 
-// extern void TIM14_IRQHandler ()
-// {
-// 	TIM14 -> SR &= ~(TIM_SR_UIF);
-//   global_count++;	
-// }
-
-// // Coinfigure the timer generate a random numnber
-// void 
-// setup_tim14 (void)
-// {
-// 	// Turn on the clock for timer 14
-// 	RCC -> APB1ENR |= RCC_APB1ENR_TIM14EN;
-// 	// set the clk freq to 100 Hz
-// 	TIM14->PSC = (10-1);
-// 	TIM14->ARR = (48-1);
-// 	// Set for Upcounting
-// 	TIM14->CR1 &= ~TIM_CR1_DIR;
-// 	// Enable interrupt
-// 	TIM14->DIER |= TIM_DIER_UIE;
-// 	// Turn on timer
-// 	TIM14->CR1 |= 0x1;
-//   // Set up the vector table
-//   NVIC -> ISER[0] = 1 << TIM14_IRQn;
-// }
-
 /**
   * @brief Coinfigure the ADC to
   * @param None
@@ -149,7 +137,6 @@ setup_tim3 (uint32_t psc, uint32_t arr)
 void
 TIM3_IRQHandler()
 {
-    //TIM3 -> SR = 0xfffe; // clear UIF pending bit by writing a 0 to it. Kp everything else by writing 1.
 	TIM3 -> SR &= ~(TIM_SR_UIF);
   fall_time += 1;
 
@@ -169,7 +156,6 @@ void EXTI2_3_IRQHandler()
   KEY_LEFT = true;
 
 }
-
 
 void EXTI4_15_IRQHandler()
 {
@@ -215,4 +201,3 @@ void init_exti()
   // enable interrupts for EXTI pins 0-1, 2-3, and 4-15 e = 1110
   NVIC -> ISER[0] |= 0xe0;
 }
-

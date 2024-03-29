@@ -1,18 +1,12 @@
 #ifndef __TETRIS__
 #define __TETRIS__
 
-#include "game_driver.h"
+#include "shape_queue.h"
 #include <math.h>
 // #include "stab.h"
 
-typedef struct
-{
-  uint8_t x_coord;
-  uint8_t y_coord;
-  shape_t shape;
-  hub75_color_t color;
-  int8_t rotation;
-} Piece_t;
+#define MOVE 2
+#define ROW_MASK 0x3fffffffffc
 
 Piece_t piece_init (void);
 
@@ -27,4 +21,5 @@ void lock_pos (uint64_t * locked_position, Piece_t piece);
 uint32_t check_clear ();
 
 bool check_row (uint8_t s, uint64_t mask);
+
 #endif

@@ -1,7 +1,7 @@
 /*
- * font.h
+ * @file font.h
  *
- * Vishnu Lagudu
+ * @author Vishnu Lagudu
  * vlagudu@purdue.edu
  *
  * Pixel maps for game fonts
@@ -19,8 +19,6 @@
 #define SHAPE_NUM_PIX 16
 #define NUM_ROWS_BOARD 24
 #define NUM_COLS_BOARD 44
-
-extern volatile uint64_t global_count;
 
 // colors
 typedef enum 
@@ -55,55 +53,3 @@ shape_t get_shape (uint8_t idx);
 hub75_color_t get_shape_color (uint8_t idx);
 
 #endif
-
-// Pixel maps
-// static const uint8_t A [] =
-// {
-//     0b0010000,
-//     0b0101000,
-//     0b1000100,
-//     0b1111100,
-//     0b1000100,
-//     0b1000100,
-//     0b1000100
-// };
-
-// static const uint8_t B [] =
-// {
-//     0b1111000,
-//     0b1000100,
-//     0b1000100,
-//     0b1111000,
-//     0b1000100,
-//     0b1000100,
-//     0b1111000
-// };
-
-// static const uint8_t C [] =
-// {
-//     0b0111100,
-//     0b1000000,
-//     0b1000000,
-//     0b1000000,
-//     0b1000000,
-//     0b1000000,
-//     0b0111100
-// };
-// static const uint64_t board [] = 
-// // {
-
-// // }
-
-// typedef struct _Font
-// {
-// 	uint8_t        w;    // width
-// 	uint8_t        h;    // height
-// 	const uint8_t* pmap; // pixel map
-// } Font;
-
-// static const Font fonts[] =
-// {
-// 	{5, 7, A},
-// 	{5, 7, B},
-// 	{5, 7, C}
-// };
