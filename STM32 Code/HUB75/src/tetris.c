@@ -227,7 +227,7 @@ tetris (pixel_t * screen)
 		  new_piece = false;
 	  }
 		// fall dowm
-	  else if (fall_time >= 300)
+	  else if (fall_time >= 200)
 	  {
 			// new position
 		  piece.y_coord -= 2;

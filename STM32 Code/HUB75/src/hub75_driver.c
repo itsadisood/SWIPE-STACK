@@ -170,6 +170,29 @@ sr_coord (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
 	uint8_t offset;
 	for (int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
+		if((positions[i].x != 255) && (positions[i].y <= 41))
+		{
+			if (positions[i].x > 0xf)
+			{
+				offset = 3;
+			}
+			else
+			{
+				offset = 0;
+			}
+			screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color &= ~(WHITE << offset);
+			if (set) screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color |= color << offset;
+		}
+		
+	}
+}
+
+void
+sr_coord_t (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
+{
+	uint8_t offset;
+	for (int i = 0; i < SHAPE_NUM_PIX; i++)
+	{
 		if((positions[i].x != 255) && (positions[i].y != 255))
 		{
 			if (positions[i].x > 0xf)
