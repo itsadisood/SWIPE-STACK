@@ -12,9 +12,12 @@
 
 #include "typeface.h"
 
+// LED Matrix Dimensions
 #define HUB75_R 16
 #define HUB75_C 64
 #define HUB75_H HUB75_R << 1
+
+// Size of DMA transfer packet
 #define MEMSIZE HUB75_R * HUB75_C
 
 

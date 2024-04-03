@@ -3,7 +3,17 @@
 
 #include "hub75_driver.h"
 
+// M
+#define STEP 2
+
+// Game board dimensions
 #define BOARD_TOP 41
+#define BOARD_R 20
+#define BOARD_C 40
+
+// Bit mask to define HUB75_R with col pixels of Game board
+#define ROW_MASK 0x3fffffffffc
+
 
 volatile bool KEY_LEFT;
 volatile bool KEY_ROT;
