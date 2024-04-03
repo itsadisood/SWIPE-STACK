@@ -40,26 +40,26 @@ set_random_seed ()
 void 
 clear_row (pixel_t * screen, int y)
 {
-	uint8_t offset;
-	y += 1;
-	for(int x = 6; x < 26; x++)
-	{
+  uint8_t offset;
+  y += 1;
+  for(int x = 6; x < 26; x++)
+  {
     // Compute the location
     uint8_t loc = (x & 0xf) * HUB75_C + (y * 2);
 
-		if (x > 0xf)
-		{
-			offset = 3;
-		}
-		else
-		{
-			offset = 0;
-		}
+    if (x > 0xf)
+    {
+      offset = 3;
+    }
+    else
+    {
+      offset = 0;
+    }
 
     // logic to clear the rows
-		screen[loc].color &= ~(WHITE << offset);
-		screen[loc + 1].color &= ~(WHITE << offset);
-	}
+    screen[loc].color &= ~(WHITE << offset);
+    screen[loc + 1].color &= ~(WHITE << offset);
+  }
 }
 
 void 
@@ -67,7 +67,7 @@ drop_rows (pixel_t * screen, int row)
 {
   row++;
   pixel_t prev;
-	uint8_t offset;  
+  uint8_t offset;  
 
   for(int x = 6; x < 26; x++)
   {
@@ -98,14 +98,14 @@ drop_rows (pixel_t * screen, int row)
 void
 sr_coord_board (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
 {
-	uint8_t offset;
-	for (int i = 0; i < SHAPE_NUM_PIX; i++)
-	{
+  uint8_t offset;
+  for (int i = 0; i < SHAPE_NUM_PIX; i++)
+  {
     // Bounds check
     if (positions[i].y > BOARD_TOP) continue;
 
     uint16_t loc = (positions[i].x & 0xf) * HUB75_C + positions[i].y;
-		
+    
     if (positions[i].x > 0xf)
     {
       offset = 3;
@@ -119,7 +119,7 @@ sr_coord_board (pixel_t * screen, coord_t * positions, hub75_color_t color, bool
     {
       screen[loc].color |= color << offset;
     }
-	}
+  }
 }
 
 /**
@@ -130,20 +130,20 @@ sr_coord_board (pixel_t * screen, coord_t * positions, hub75_color_t color, bool
 void 
 setup_adc(void)
 {
-	RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
+  RCC->AHBENR |= RCC_AHBENR_GPIOCEN;
   // set PC3 to anlog mode
-	GPIOC->MODER |= 0x3 << 6;
+  GPIOC->MODER |= 0x3 << 6;
 
-	RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
-	RCC -> CR2 |= RCC_CR2_HSI14ON;
+  RCC->APB2ENR |= RCC_APB2ENR_ADC1EN;
+  RCC -> CR2 |= RCC_CR2_HSI14ON;
   // Wait for 14MHz internal clk
-	while (!(RCC -> CR2 & RCC_CR2_HSI14RDY));
+  while (!(RCC -> CR2 & RCC_CR2_HSI14RDY));
   // enable the ADC
-	ADC1 -> CR |= ADC_CR_ADEN;
+  ADC1 -> CR |= ADC_CR_ADEN;
   // Wait for ADC ready
-	while (!(ADC1 -> ISR & ADC_ISR_ADRDY));
-	ADC1 -> CHSELR = ADC_CHSELR_CHSEL13;
-	while (!(ADC1 -> ISR & ADC_ISR_ADRDY));
+  while (!(ADC1 -> ISR & ADC_ISR_ADRDY));
+  ADC1 -> CHSELR = ADC_CHSELR_CHSEL13;
+  while (!(ADC1 -> ISR & ADC_ISR_ADRDY));
   // start the ADC
   ADC1 -> CR |= ADC_CR_ADSTART;
   // Wait for end of conversion
@@ -151,28 +151,28 @@ setup_adc(void)
 }
 
 /*
-	Upcounting Timer 3 to track elapsed game time
+  Upcounting Timer 3 to track elapsed game time
 */
 void
 setup_tim3 (uint32_t psc, uint32_t arr)
 {
-	// Turn on the clock for timer 3
-	RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
-	// set the clk freq
-	TIM3->PSC = psc-1;
-	TIM3->ARR = arr-1;
-	// Set for Upcounting
-	TIM3->CR1 &= ~TIM_CR1_DIR;
-	TIM3 -> DIER |= TIM_DIER_UIE;
-	// Turn on timer
-	TIM3->CR1 |= TIM_CR1_CEN;
-	NVIC -> ISER[0] |= 0x00010000; // enable tim3 interrupt in NVIC
+  // Turn on the clock for timer 3
+  RCC -> APB1ENR |= RCC_APB1ENR_TIM3EN;
+  // set the clk freq
+  TIM3->PSC = psc-1;
+  TIM3->ARR = arr-1;
+  // Set for Upcounting
+  TIM3->CR1 &= ~TIM_CR1_DIR;
+  TIM3 -> DIER |= TIM_DIER_UIE;
+  // Turn on timer
+  TIM3->CR1 |= TIM_CR1_CEN;
+  NVIC -> ISER[0] |= 0x00010000; // enable tim3 interrupt in NVIC
 }
 
 void
 TIM3_IRQHandler()
 {
-	TIM3 -> SR &= ~(TIM_SR_UIF);
+  TIM3 -> SR &= ~(TIM_SR_UIF);
   fall_time += 1;
 
 }
