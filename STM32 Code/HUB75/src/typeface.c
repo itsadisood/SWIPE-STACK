@@ -3,19 +3,19 @@
 /************** tetris board game **************/
 const uint64_t board_pmap [] = 
 {
-	0xfffffffffff, 0xfffffffffff, 0xc0000000003, 0xc0000000003, 
-	0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
-	0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
+  0xfffffffffff, 0xfffffffffff, 0xc0000000003, 0xc0000000003, 
   0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
-	0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
-	0xc0000000003, 0xc0000000003, 0xfffffffffff, 0xfffffffffff
+  0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
+  0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
+  0xc0000000003, 0xc0000000003, 0xc0000000003, 0xc0000000003,
+  0xc0000000003, 0xc0000000003, 0xfffffffffff, 0xfffffffffff
 };
 const map_t board = {44, 24, board_pmap};
 
 map_t
 get_board (void)
 {
-	return board;
+  return board;
 }
 
 /************* _tetris board game_ *************/
@@ -63,20 +63,20 @@ const hub75_color_t shape_colors [] = {RED, GREEN, YELLOW, BLUE, PINK, TEAL, RED
 shape_t 
 get_shape (uint8_t idx)
 {
-	if (idx >= NUM_SHAPES)
-	{
-		return shapes[NUM_SHAPES];
-	}
-	return shapes[idx];
+  if (idx >= NUM_SHAPES)
+  {
+    return shapes[NUM_SHAPES];
+  }
+  return shapes[idx];
 }
 
 hub75_color_t 
 get_shape_color (uint8_t idx)
 {
-	if (idx >= NUM_SHAPES)
-	{
-		return BLACK;
-	}
-	return shape_colors[idx];
+  if (idx >= NUM_SHAPES)
+  {
+    return BLACK;
+  }
+  return shape_colors[idx];
 }
 /************* _game shapes_ *************/

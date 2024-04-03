@@ -12,26 +12,29 @@
 
 #include "typeface.h"
 
+// LED Matrix Dimensions
 #define HUB75_R 16
 #define HUB75_C 64
 #define HUB75_H HUB75_R << 1
+
+// Size of DMA transfer packet
 #define MEMSIZE HUB75_R * HUB75_C
 
 
 typedef struct
 {
-	int color  : 6;
-	int space1 : 2;
-	int latch  : 1;
-	int blank  : 1;
-	int space2 : 1;
-	int raddr  : 5;
+  int color  : 6;
+  int space1 : 2;
+  int latch  : 1;
+  int blank  : 1;
+  int space2 : 1;
+  int raddr  : 5;
 } pixel_t;
 
 typedef struct
 {
-	uint8_t x;
-	uint8_t y;
+  uint8_t x;
+  uint8_t y;
 } coord_t;
 
 void nano_wait (unsigned int);
@@ -48,6 +51,6 @@ void init_screen (pixel_t * screen, hub75_color_t color);
 
 void sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75_color_t color, bool set);
 
-void sr_coord (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
+void sr_coord_hub75 (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
 
 #endif
