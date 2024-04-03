@@ -18,6 +18,8 @@ typedef struct
 
 void init_shape_queue (Piece_t * shape_queue);
 
+void convert_shape_format (coord_t * positions, Piece_t piece);
+
 void enqueue_shape (Piece_t * shape_queue);
 
 Piece_t dequeue_shape (Piece_t * shape_queue);

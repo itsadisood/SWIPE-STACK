@@ -34,7 +34,7 @@ piece_init (void)
 }
 
 void
-test (coord_t * positions, Piece_t piece)
+convert_shape_format (coord_t * positions, Piece_t piece)
 {
   uint8_t pos = 0;
   map_t format = piece.shape.pmap[piece.rotation];
@@ -45,16 +45,6 @@ test (coord_t * positions, Piece_t piece)
     {
       if ((doubleword & 1))
       {
-				// if ((piece.y_coord - i) <= 41)
-				// {
-				// 	positions[pos].x = piece.x_coord - j;
-				// 	positions[pos].y = piece.y_coord - i;
-				// }
-				// else
-				// {
-				// 	positions[pos].x = 255;
-				// 	positions[pos].y = 255;
-				// }
         positions[pos].x = piece.x_coord - j;
         positions[pos].y = piece.y_coord - i;
         pos++;
@@ -73,9 +63,9 @@ init_shape_queue (Piece_t * shape_queue)
   shape_queue[2] = piece_init ();
   shape_queue[2].x_coord += 20;
 
-  test (p_pos1, shape_queue[0]);
-  test (p_pos2, shape_queue[1]);
-  test (p_pos3, shape_queue[2]);
+  convert_shape_format (p_pos1, shape_queue[0]);
+  convert_shape_format (p_pos2, shape_queue[1]);
+  convert_shape_format (p_pos3, shape_queue[2]);
 }
 
 void 
@@ -99,20 +89,19 @@ dequeue_shape (Piece_t * shape_queue)
 void
 disp_shape_queue (Piece_t * shape_queue, pixel_t * screen)
 {
-  sr_coord_t (screen, p_pos1, WHITE, 0);
-  sr_coord_t (screen, p_pos2, WHITE, 0);
-  sr_coord_t (screen, p_pos3, WHITE, 0);
+  sr_coord_hub75 (screen, p_pos1, WHITE, 0);
+  sr_coord_hub75 (screen, p_pos2, WHITE, 0);
+  sr_coord_hub75 (screen, p_pos3, WHITE, 0);
 
-  test (pos1, shape_queue[0]);
-  test (pos2, shape_queue[1]);
-  test (pos3, shape_queue[2]);
+  convert_shape_format (pos1, shape_queue[0]);
+  convert_shape_format (pos2, shape_queue[1]);
+  convert_shape_format (pos3, shape_queue[2]);
 
-  sr_coord_t (screen, pos1, shape_queue[0].color, 1);
-  sr_coord_t (screen, pos2, shape_queue[1].color, 1);
-  sr_coord_t (screen, pos3, shape_queue[2].color, 1);
+  sr_coord_hub75 (screen, pos1, shape_queue[0].color, 1);
+  sr_coord_hub75 (screen, pos2, shape_queue[1].color, 1);
+  sr_coord_hub75 (screen, pos3, shape_queue[2].color, 1);
 
   memcpy (p_pos1, pos1, sizeof(pos1));
   memcpy (p_pos2, pos2, sizeof(pos2));
   memcpy (p_pos3, pos3, sizeof(pos3));
-
 }

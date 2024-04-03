@@ -5,7 +5,7 @@ coord_t positions   [SHAPE_NUM_PIX];
 coord_t p_positions [SHAPE_NUM_PIX];
 Piece_t shape_queue [QUEUE_SIZE];
 
-// fix locked positions
+// locked positions array
 // 24 x 44 (actually 24 x 64, but ignore upper 20 bits)
 uint64_t locked_positions[NUM_ROWS_BOARD + 8] = 
 {
@@ -19,42 +19,13 @@ uint64_t locked_positions[NUM_ROWS_BOARD + 8] =
 	0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
 
-void
-convert_shape_format (coord_t * positions, Piece_t piece)
-{
-  uint8_t pos = 0;
-  map_t format = piece.shape.pmap[piece.rotation];
-  for (int i = 0; i < SHAPE_H; i++)
-  {
-    uint64_t doubleword = format.pmap[i];
-    for (int j = 0; j < SHAPE_W; j++)
-    {
-      if ((doubleword & 1))
-      {
-				if ((piece.y_coord - i) <= 43)
-				{
-					positions[pos].x = piece.x_coord - j;
-					positions[pos].y = piece.y_coord - i;
-				}
-				else
-				{
-					positions[pos].x = 255;
-					positions[pos].y = 255;
-				}
-        pos++;
-      }
-      doubleword >>= 1; 
-    }
-  }
-}
-
-void
+static void
 move_shape (pixel_t * screen, Piece_t piece)
 {
 	// undo prev state
-  sr_coord (screen, p_positions, piece.color, 0);
+  sr_coord_board (screen, p_positions, piece.color, 0);
 	// form new state
-	sr_coord (screen, positions, piece.color, 1);
+	sr_coord_board (screen, positions, piece.color, 1);
 }
 
 //*************************************************************************************************
@@ -62,11 +33,9 @@ move_shape (pixel_t * screen, Piece_t piece)
 // of 64-bit unsigned integers, where the array index represents the row, while the bits of the
 // integer elements represent whether a column is occupied or not
 //*************************************************************************************************
-bool
+static bool
 is_valid_space (uint64_t * locked_positions, Piece_t piece)
 {
-	// convert_shape_format (positions, piece);
-
 	for(int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
 		if((positions[i].x != 255) && (positions[i].y != 255))
@@ -82,11 +51,12 @@ is_valid_space (uint64_t * locked_positions, Piece_t piece)
 }
 
 // iterate through column 6 to column 25 of some row, but quit when there is not a filled pixel
-bool
-check_row (uint8_t s, uint64_t mask)
+static bool
+check_row_fill (uint8_t s, uint64_t mask)
 {
 	uint64_t prev, curr;
-	for(int i = 0; i < NUM_ROWS_BOARD - 5; i++) // i is [0,18], so s + i is [6,24] and s + i + 1 is [7,25]
+
+	for(int i = 0; i < NUM_ROWS_BOARD - 5; i++)
 	{
 		prev = locked_positions [s + i] & mask;
 		curr = locked_positions [s + i + 1] & mask;
@@ -102,29 +72,46 @@ check_row (uint8_t s, uint64_t mask)
 	return true;
 }
 
-uint32_t
-check_clear ()
+static uint32_t
+check_rows_clear ()
 {
 	uint32_t cols = 0;
 	uint64_t mask = 0xc;
 
 	for (int i = 0; i < (NUM_COLS_BOARD - 4) / 2; i++)
 	{
-		if (check_row (6, mask))
+		if (check_row_fill (6, mask))
 		{
 			cols |= 1 << i;
 		}
 		mask <<= 2;
 	}
-
 	return cols;
 }
 
-void
+static void 
+update_lock_pos (int col)
+{
+	col *= 2;
+  uint64_t upper, lower;
+  for (int s = 6; s < 26; s++)
+  {
+    // get tthe lower loc_pos
+    lower = locked_positions[s] & ((ROW_MASK >> (40 - col)));
+
+    // get the upper loc_pos
+    upper = locked_positions[s] & (ROW_MASK << (col + 2));
+    upper >>= 2; 
+
+    locked_positions[s] = upper | lower; 
+  }
+}
+
+static void
 row_check (pixel_t * screen)
 {
 	int rows_cleared = 0;
-	uint32_t cols = check_clear ();
+	uint32_t cols = check_rows_clear ();
 
 	if (cols != 0)
 	{
@@ -145,37 +132,19 @@ row_check (pixel_t * screen)
 // lock_pos will append the position of a stoppied piece into the locked_positions array
 // The position will be locked until a row is cleared or the game ends
 //*************************************************************************************************
-void
+static void
 lock_pos(uint64_t * locked_positions, Piece_t piece)
 {
 	// convert_shape_format (positions, piece);
-	uint64_t shifter = 1;
+	uint64_t one = 1;
 
 	for (int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
-		locked_positions[positions[i].x] |= shifter << positions[i].y;
+		locked_positions[positions[i].x] |= one << positions[i].y;
 	}
 }
 
-void 
-update_lock_pos (int col)
-{
-	col *= 2;
-  uint64_t upper, lower;
-  for (int s = 6; s < 26; s++)
-  {
-    // get tthe lower loc_pos
-    lower = locked_positions[s] & ((ROW_MASK >> (40 - col)));
-
-    // get the upper loc_pos
-    upper = locked_positions[s] & (ROW_MASK << (col + 2));
-    upper >>= 2; 
-
-    locked_positions[s] = upper | lower; 
-  }
-}
-
-Piece_t
+static Piece_t
 update_shape_queue (pixel_t * screen)
 {
 	Piece_t piece = dequeue_shape (shape_queue);
@@ -184,12 +153,18 @@ update_shape_queue (pixel_t * screen)
 	return piece;
 }
 
-bool
+/**
+ * @brief  Checks to see if the game is lost, positions of a
+ *         piece exceeds `BOARD_TOP`
+ * @param  None
+ * @retval boolean (true or false) determing loss
+*/
+static bool
 check_loss ()
 {
 	for (int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
-		if (positions[i].y > 41)
+		if (positions[i].y > BOARD_TOP)
 		{
 			return true;
 		}
@@ -197,6 +172,11 @@ check_loss ()
 	return false;
 }
 
+/**
+ * @brief  Main game loop that runs the game
+ * @param  screen 
+ * @retval boolean (true or false) determing loss
+*/
 void
 tetris (pixel_t * screen)
 {
@@ -222,12 +202,12 @@ tetris (pixel_t * screen)
 			piece = update_shape_queue (screen);
 			// blit onto screen
 			convert_shape_format (positions, piece);
-		  sr_coord (screen, positions, piece.color, 1);
+		  sr_coord_board (screen, positions, piece.color, 1);
 
 		  new_piece = false;
 	  }
 		// fall dowm
-	  else if (fall_time >= 200)
+	  else if (fall_time >= 300)
 	  {
 			// new position
 		  piece.y_coord -= 2;

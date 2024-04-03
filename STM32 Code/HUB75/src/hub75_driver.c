@@ -165,47 +165,29 @@ sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75
 }
 
 void
-sr_coord (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
+sr_coord_hub75 (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
 {
 	uint8_t offset;
 	for (int i = 0; i < SHAPE_NUM_PIX; i++)
 	{
-		if((positions[i].x != 255) && (positions[i].y <= 41))
-		{
-			if (positions[i].x > 0xf)
-			{
-				offset = 3;
-			}
-			else
-			{
-				offset = 0;
-			}
-			screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color &= ~(WHITE << offset);
-			if (set) screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color |= color << offset;
-		}
-		
-	}
-}
+		// Bounds Checks
+		if (positions[i].x >= (HUB75_R * 2)) return;
+		if (positions[i].x >= (HUB75_C)) return;
 
-void
-sr_coord_t (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
-{
-	uint8_t offset;
-	for (int i = 0; i < SHAPE_NUM_PIX; i++)
-	{
-		if((positions[i].x != 255) && (positions[i].y != 255))
+		uint16_t loc = (positions[i].x & 0xf) * HUB75_C + positions[i].y;
+
+		if (positions[i].x > 0xf)
 		{
-			if (positions[i].x > 0xf)
-			{
-				offset = 3;
-			}
-			else
-			{
-				offset = 0;
-			}
-			screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color &= ~(WHITE << offset);
-			if (set) screen[(positions[i].x & 0xf) * HUB75_C + positions[i].y].color |= color << offset;
+			offset = 3;
 		}
-		
+		else
+		{
+			offset = 0;
+		}
+		screen[loc].color &= ~(WHITE << offset);
+		if (set)
+		{
+			screen[loc].color |= color << offset;
+		}
 	}
 }

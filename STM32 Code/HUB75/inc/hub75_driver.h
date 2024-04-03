@@ -48,6 +48,6 @@ void init_screen (pixel_t * screen, hub75_color_t color);
 
 void sr_font (pixel_t * screen, uint8_t row, uint8_t col, const map_t typeface, hub75_color_t color, bool set);
 
-void sr_coord (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
+void sr_coord_hub75 (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
 
 #endif

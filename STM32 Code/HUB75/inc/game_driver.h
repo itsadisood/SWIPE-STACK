@@ -3,6 +3,8 @@
 
 #include "hub75_driver.h"
 
+#define BOARD_TOP 41
+
 volatile bool KEY_LEFT;
 volatile bool KEY_ROT;
 volatile bool KEY_RIGHT;
@@ -25,6 +27,8 @@ void set_random_seed ();
 void setup_tim3(uint32_t psc, uint32_t arr); // setup game timer
 
 void init_exti();
+
+void sr_coord_board (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set);
 
 // IRQ Handlers
 extern void EXTI0_1_IRQHandler();

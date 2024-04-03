@@ -44,6 +44,9 @@ clear_row (pixel_t * screen, int y)
 	y += 1;
 	for(int x = 6; x < 26; x++)
 	{
+    // Compute the location
+    uint8_t loc = (x & 0xf) * HUB75_C + (y * 2);
+
 		if (x > 0xf)
 		{
 			offset = 3;
@@ -52,9 +55,10 @@ clear_row (pixel_t * screen, int y)
 		{
 			offset = 0;
 		}
-		screen[(x & 0xf) * HUB75_C + (y * 2)].color &= ~(WHITE << offset);
-		screen[(x & 0xf) * HUB75_C + (y * 2) + 1].color &= ~(WHITE << offset);
 
+    // logic to clear the rows
+		screen[loc].color &= ~(WHITE << offset);
+		screen[loc + 1].color &= ~(WHITE << offset);
 	}
 }
 
@@ -67,8 +71,11 @@ drop_rows (pixel_t * screen, int row)
 
   for(int x = 6; x < 26; x++)
   {
-    for(int y = 2; y < 41; y++)
+    for(int y = (row * 2); y < 41; y++)
     {
+      // calculate the position
+      uint16_t loc = (x & 0xf) * HUB75_C + y;
+
       if(x > 0xf)
       {
         offset = 3;
@@ -77,14 +84,42 @@ drop_rows (pixel_t * screen, int row)
       {
         offset = 0; 
       }
-      if(y >= (row * 2))
-      {
-        prev = screen[(x & 0xf) * HUB75_C + (y)];
-        screen[(x & 0xf) * HUB75_C + y].color &= ~(WHITE << offset); // undo previous state
-        screen[(x & 0xf) * HUB75_C + (y - 2)].color |= ((prev.color >> offset) & 0x7) << offset;
-      }
+
+      // Logic to drop the rows
+      prev = screen[loc];
+      // undo previous state
+      screen[loc].color &= ~(WHITE << offset);
+      // drop the rows
+      screen[loc - 2].color |= ((prev.color >> offset) & 0x7) << offset;
     }
   }
+}
+
+void
+sr_coord_board (pixel_t * screen, coord_t * positions, hub75_color_t color, bool set)
+{
+	uint8_t offset;
+	for (int i = 0; i < SHAPE_NUM_PIX; i++)
+	{
+    // Bounds check
+    if (positions[i].y > BOARD_TOP) continue;
+
+    uint16_t loc = (positions[i].x & 0xf) * HUB75_C + positions[i].y;
+		
+    if (positions[i].x > 0xf)
+    {
+      offset = 3;
+    }
+    else
+    {
+      offset = 0;
+    }
+    screen[loc].color &= ~(WHITE << offset);
+    if (set)
+    {
+      screen[loc].color |= color << offset;
+    }
+	}
 }
 
 /**
