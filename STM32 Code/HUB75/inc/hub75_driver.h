@@ -20,18 +20,18 @@
 
 typedef struct
 {
-	int color  : 6;
-	int space1 : 2;
-	int latch  : 1;
-	int blank  : 1;
-	int space2 : 1;
-	int raddr  : 5;
+  int color  : 6;
+  int space1 : 2;
+  int latch  : 1;
+  int blank  : 1;
+  int space2 : 1;
+  int raddr  : 5;
 } pixel_t;
 
 typedef struct
 {
-	uint8_t x;
-	uint8_t y;
+  uint8_t x;
+  uint8_t y;
 } coord_t;
 
 void nano_wait (unsigned int);
