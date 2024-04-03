@@ -25,21 +25,21 @@
 // *****************************************
 
 // main game receiver characteristics for right glove (MASTER)
-const char *RX_MACADDR_R = "E4E11295D8C6"; // known MAC address for Main RX BT on STM32F0 PCB
+const char *RX_MACADDR_R = "E4E11295D8C6"; // CHANGE THIS LATER
 const char *RX_NAME_R   = "TetrisHub";
 const char *RX_ADVINT_R  = "100ms";
 
 // right glove transmitter characteristics (SLAVE)
-const char *TX_MACADDR_R = "6098665B565";
+const char *TX_MACADDR_R = "6098665B565"; // CHANGE THIS LATER
 const char *TX_NAME_R = "GloveR";
 const char *TX_ADVINT_R  = "100ms";
 
 // left glove transmitter characteristics (SLAVE)
-const char *TX_MACADDR_L = "E4E11295D794";
+const char *TX_MACADDR_L = "E4E11295D794";	 // CHANGE THIS LATER
 const char *TX_NAME_L = "GloveL";
 const char *TX_ADVINT_L  = "100ms";
 
-
+// retrieve MAC address of bluetooth module
 void getATAddr()
 {
 	  uint8_t testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
@@ -59,6 +59,7 @@ void getATAddr()
 	  }
 }
 
+// if configured as slave and IMME1, make yourself discoverable
 void sendATStart()
 {
 	char *startTx = "AT+START";
@@ -76,6 +77,7 @@ void sendATStart()
 	}
 }
 
+// if configured as master, start discovery of slave peripherals
 void sendATDisc()
 {
 	char *discTx = "AT+DISC?";
@@ -86,6 +88,7 @@ void sendATDisc()
 		USART5 -> TDR = discTx[i];
 	}
 
+	// Is this required?
 	for(uint32_t i = 0; i < 8; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_RXNE)){}
@@ -93,11 +96,13 @@ void sendATDisc()
 	}
 }
 
+/** Configure device in master or slave mode
+ 	 AT+ROLE? -> ask current role
+ 	 AT+ROLE1 -> set to master
+ 	 AT+ROLE0 -> set to slave
+**/
 void setATRole()
 {
-	// AT+ROLE? -> ask current role
-	// AT+ROLE1 -> set to master
-	// AT+ROLE0 -> set to slave
 	char roleTx[8] = "AT+ROLE0";
 	char roleRx[8] = {};
 
@@ -114,6 +119,7 @@ void setATRole()
 	}
 }
 
+// set advertising interval (not used commonly)
 void setAdvInterval()
 {
 	char* advTx = "AT+ADVI9";
@@ -134,6 +140,9 @@ void setAdvInterval()
 	}
 }
 
+/** Basic AT check
+  	get AT+OK if device ready to go
+**/
 void sendATCheck()
 {
 	  uint8_t testTX[2] = "AT";
@@ -153,11 +162,13 @@ void sendATCheck()
 	  }
 }
 
+/** Configure how the bluetooth module startups
+ 	 AT+IMME1 -> if slave, wait for AT+START to advertise
+			  -> if master, wait for AT+DISC to discover
+ 	 AT+IMME0 -> start working from get go.
+**/
 void setATImme()
 {
-	// AT+IMME1 -> if slave, wait for AT+START to advertise
-	//			-> if master, wait for AT+DISC to discover
-	// AT+IMME0 -> start working from get go.
 
 	char immeTx[8] = "AT+IMME0";
 	char immeRx[8] = {};
@@ -175,6 +186,7 @@ void setATImme()
 	}
 }
 
+// change name of bluetooth module (preserved across power outs)
 void setBxName()
 {
 	  // set name of bluetooth device
@@ -195,6 +207,7 @@ void setBxName()
 	  }
 }
 
+// Factory reset module (CAREFUL)
 void sendATRenew()
 {
 	  // set name of bluetooth device
@@ -215,6 +228,7 @@ void sendATRenew()
 	  }
 }
 
+// Soft reset module (usually after changing config settings)
 void sendATReset()
 {
 	  // set name of bluetooth device
@@ -284,16 +298,23 @@ void BluetoothSetup()
 #define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // gesture senstivity thresholds
-#define DEADZONE_ROLL 				5								// deadzone consideration for resting hand movement
-#define ROLL_THRESHOLD 			32								//
+#define DEADZONE_PITCH				4								// up and down twist dead zone
+#define PITCH_UP_LIMIT				30								// rotate
+#define PITCH_DN_LIMIT				30								// place down
+
+#define DEADZONE_ROLL 				5								// left and right twist dead zone
+#define ROLL_LFT_LIMIT 			32								// swipe left
+#define ROLL_RGT_LIMIT				32								// swipe right
 
 uint8_t data_fifo[FIFOSIZE];
 
 struct Packet
 {
 	float roll  [PACKET_SIZE];
+	float pitch [PACKET_SIZE];
 
 };
+
 struct Packet curr_packet;
 
 int curr_sample_num = 0;
@@ -307,59 +328,57 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 	return final_number;
 }
 
-//void detect_roll(float sampled_roll_values[])
-//{
-//    int left_roll_count = 0;
-//    int right_roll_count = 0;
-//
-//    for (int i = 0; i < PACKET_SIZE; i++)
-//    {
-//        // Check if roll is outside deadzones and thresholds
-//        if (sampled_roll_values[i] < -(DEADZONE_ROLL + ROLL_THRESHOLD))
-//        {
-//            left_roll_count++; // Increment roll count for significant roll samples
-//        }
-//        else if(sampled_roll_values[i] > DEADZONE_ROLL + ROLL_THRESHOLD)
-//        {
-//        	right_roll_count++;
-//        }
-//    }
-//    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
-//    if (left_roll_count >= PACKET_SIZE / 2)
-//    {
-//        sendBxString("1LR"); // Send message indicating roll detection
-//    }
-//    else if (right_roll_count >= PACKET_SIZE / 2)
-//	{
-//		sendBxString("1RR"); // Send message indicating roll detection
-//	}
-//}
-
-void detect_swipe_horizontal(float sampled_x_acl_values[])
+void detect_roll(float sampled_roll_values[])
 {
-    int left_swipe_count = 0;
-    int right_swipe_count = 0;
+    int left_roll_count = 0;
+    int right_roll_count = 0;
 
     for (int i = 0; i < PACKET_SIZE; i++)
     {
         // Check if roll is outside deadzones and thresholds
-        if (sampled_x_acl_values[i] < -X_ACL_THRESHOLD)
+        if (sampled_roll_values[i] < -(DEADZONE_ROLL + ROLL_LFT_LIMIT))
         {
-            left_swipe_count++; // Increment roll count for significant roll samples
+            left_roll_count++; // Increment roll count for significant roll samples
         }
-        else if(sampled_x_acl_values[i] > X_ACL_THRESHOLD)
+        else if(sampled_roll_values[i] > (DEADZONE_ROLL + ROLL_RGT_LIMIT))
         {
-        	right_swipe_count++;
+        	right_roll_count++;
         }
     }
     // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
-    if (left_swipe_count >= PACKET_SIZE / 2)
+    if (left_roll_count >= PACKET_SIZE / 2)
     {
-    	sendBxString("1LS"); // Send message indicating roll detection
+        sendBxString("LftSwipe"); // left swipe
     }
-    else if (right_swipe_count >= PACKET_SIZE / 2)
+    else if (right_roll_count >= PACKET_SIZE / 2)
 	{
-    	sendBxString("1RS"); // Send message indicating roll detection
+		sendBxString("RgtSwipe"); // right swipe
+	}
+}
+
+void detect_pitch(float sampled_pitch_values[])
+{
+    int down_pitch_count = 0;
+    int up_pitch_count = 0;
+
+    for (int i = 0; i < PACKET_SIZE; i++)
+    {
+        if (sampled_pitch_values[i] < -(DEADZONE_PITCH + PITCH_UP_LIMIT))
+        {
+            down_pitch_count++;
+        }
+        else if(sampled_pitch_values[i] > (DEADZONE_ROLL + PITCH_DN_LIMIT))
+        {
+        	up_pitch_count++;
+        }
+    }
+    if (down_pitch_count >= PACKET_SIZE / 2)
+    {
+        sendBxString("Down");
+    }
+    else if (up_pitch_count >= PACKET_SIZE / 2)
+	{
+		sendBxString("Rotate");
 	}
 }
 
@@ -373,16 +392,15 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 			// do prediction call
 			curr_sample_num = 0;
 			sendBxString("PRD");
-//			detect_roll(curr_packet.roll);
-			detect_swipe_horizontal(curr_packet.x_acl);
+			detect_pitch(curr_packet.pitch);
+			detect_roll(curr_packet.roll);
 		}
 		else
 		{
 			// fill packet buffer
 			DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
+			curr_packet.pitch[curr_sample_num] = convertToFloat(data_fifo[5], data_fifo[6]);
 			curr_packet.roll[curr_sample_num] = convertToFloat(data_fifo[7], data_fifo[8]);
-			curr_packet.x_acl[curr_sample_num] = convertToFloat(data_fifo[9], data_fifo[10]);
-			curr_packet.z_acl[curr_sample_num] = convertToFloat(data_fifo[13], data_fifo[14]);
 			curr_sample_num += 1;
 		}
 	}

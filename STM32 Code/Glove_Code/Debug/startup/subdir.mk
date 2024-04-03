@@ -15,7 +15,7 @@ startup/%.o: ../startup/%.s
 	@echo 'Building file: $<'
 	@echo 'Invoking: MCU GCC Assembler'
 	@echo $(PWD)
-	arm-none-eabi-as -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -I"C:/Users/Aditya/workspace/glove_code/StdPeriph_Driver/inc" -I"C:/Users/Aditya/workspace/glove_code/inc" -I"C:/Users/Aditya/workspace/glove_code/CMSIS/device" -I"C:/Users/Aditya/workspace/glove_code/CMSIS/core" -g -o "$@" "$<"
+	arm-none-eabi-as -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -I"C:/Users/Aditya/workspace/Swipe-Stack/STM32 Code/Glove_Code/StdPeriph_Driver/inc" -I"C:/Users/Aditya/workspace/Swipe-Stack/STM32 Code/Glove_Code/inc" -I"C:/Users/Aditya/workspace/Swipe-Stack/STM32 Code/Glove_Code/CMSIS/device" -I"C:/Users/Aditya/workspace/Swipe-Stack/STM32 Code/Glove_Code/CMSIS/core" -g -o "$@" "$<"
 	@echo 'Finished building: $<'
 	@echo ' '
 

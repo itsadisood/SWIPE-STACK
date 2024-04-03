@@ -31,10 +31,10 @@ endif
 all: glove_code.elf
 
 # Tool invocations
-glove_code.elf: $(OBJS) $(USER_OBJS) C:\Users\Aditya\workspace\glove_code/LinkerScript.ld
+glove_code.elf: $(OBJS) $(USER_OBJS) C:\Users\Aditya\workspace\Swipe-Stack\STM32\ Code\Glove_Code/LinkerScript.ld
 	@echo 'Building target: $@'
 	@echo 'Invoking: MCU GCC Linker'
-	arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -T"C:/Users/Aditya/workspace/glove_code/LinkerScript.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "glove_code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
+	arm-none-eabi-gcc -mcpu=cortex-m0 -mthumb -mfloat-abi=soft -T"C:/Users/Aditya/workspace/Swipe-Stack/STM32 Code/Glove_Code/LinkerScript.ld" -Wl,-Map=output.map -Wl,--gc-sections -o "glove_code.elf" @"objects.list" $(USER_OBJS) $(LIBS) -lm
 	@echo 'Finished building target: $@'
 	@echo ' '
 	$(MAKE) --no-print-directory post-build
