@@ -19,6 +19,7 @@
 **/
 
 #include "stm32f0xx.h"
+#include <string.h>
 
 // *****************************************
 // BLUETOOTH CODE **************************
@@ -30,7 +31,8 @@ const char *RX_NAME_R   = "TetrisHub";
 const char *RX_ADVINT_R  = "100ms";
 
 // right glove transmitter characteristics (SLAVE)
-const char *TX_MACADDR_R = "6098665B565"; // CHANGE THIS LATER
+//const char *TX_MACADDR_R = "6098665B565"; // CHANGE THIS LATER (breadboard)
+const char* TX_MACADDR_R = "907BC6BA3C4B";
 const char *TX_NAME_R = "GloveR";
 const char *TX_ADVINT_R  = "100ms";
 
@@ -51,19 +53,19 @@ void getATAddr()
 		  USART5 -> TDR = testAddrTx[i];
 	  }
 
-	  // expect "OK+Mac Addr" from Bx
-	  for(int i = 0; i < 29; i++)
-	  {
-		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
-		  testAddrRx[i] = USART5->RDR;
-	  }
+//	   expect "OK+Mac Addr" from Bx
+//	  for(int i = 0; i < 29; i++)
+//	  {
+//		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
+//		  testAddrRx[i] = USART5->RDR;
+//	  }
 }
 
 // if configured as slave and IMME1, make yourself discoverable
 void sendATStart()
 {
 	char *startTx = "AT+START";
-	char startRx[8] = {}; //"OK+START"
+	char startRx[8] = {};
 	for(uint32_t i = 0; i < 8; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_TXE)){}
@@ -294,17 +296,17 @@ void BluetoothSetup()
 
 // sizing constants
 #define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
-#define PREDICTIONS_PER_SECOND 	3 								// # of times the entire toolchain runs to display a output
+#define PREDICTIONS_PER_SECOND 	5 								// # of times the entire toolchain runs to display a output
 #define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // gesture senstivity thresholds
-#define DEADZONE_PITCH				4								// up and down twist dead zone
-#define PITCH_UP_LIMIT				30								// rotate
-#define PITCH_DN_LIMIT				30								// place down
+#define DEADZONE_PITCH				3								// up and down twist dead zone
+#define PITCH_UP_LIMIT				27								// rotate
+#define PITCH_DN_LIMIT				12								// place down
 
 #define DEADZONE_ROLL 				5								// left and right twist dead zone
-#define ROLL_LFT_LIMIT 			32								// swipe left
-#define ROLL_RGT_LIMIT				32								// swipe right
+#define ROLL_LFT_LIMIT 			27								// swipe left
+#define ROLL_RGT_LIMIT				27								// swipe right
 
 uint8_t data_fifo[FIFOSIZE];
 
@@ -312,12 +314,12 @@ struct Packet
 {
 	float roll  [PACKET_SIZE];
 	float pitch [PACKET_SIZE];
-
 };
 
 struct Packet curr_packet;
 
 int curr_sample_num = 0;
+char* last_gesture = "NULL";
 
 float convertToFloat(uint8_t lsb, uint8_t msb)
 {
@@ -328,7 +330,39 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 	return final_number;
 }
 
-void detect_roll(float sampled_roll_values[])
+void detect_pitch(float sampled_pitch_values[])
+{
+    int down_pitch_count = 0;
+    int up_pitch_count = 0;
+
+    for (int i = 0; i < PACKET_SIZE; i++)
+    {
+        if (sampled_pitch_values[i] < -(DEADZONE_PITCH + PITCH_DN_LIMIT))
+        {
+            down_pitch_count++;
+        }
+        else if(sampled_pitch_values[i] > (DEADZONE_PITCH + PITCH_UP_LIMIT))
+        {
+        	up_pitch_count++;
+        }
+    }
+    if (down_pitch_count >= PACKET_SIZE / 2)
+    {
+        sendBxString("DownMove");
+        last_gesture = "DownMove";
+    }
+    else if (up_pitch_count >= PACKET_SIZE / 2)
+	{
+		sendBxString("RotateUp");
+		last_gesture = "RotateUp";
+	}
+    else if(strcmp(last_gesture,"LftSwipe") != 0 && strcmp(last_gesture,"RgtSwipe") != 0)
+	{
+    	last_gesture = "NULL";
+	}
+}
+
+int detect_roll(float sampled_roll_values[])
 {
     int left_roll_count = 0;
     int right_roll_count = 0;
@@ -349,37 +383,20 @@ void detect_roll(float sampled_roll_values[])
     if (left_roll_count >= PACKET_SIZE / 2)
     {
         sendBxString("LftSwipe"); // left swipe
+        last_gesture = "LftSwipe";
+        return 1;
     }
     else if (right_roll_count >= PACKET_SIZE / 2)
 	{
 		sendBxString("RgtSwipe"); // right swipe
+		last_gesture = "RgtSwipe";
+		return 1;
 	}
-}
-
-void detect_pitch(float sampled_pitch_values[])
-{
-    int down_pitch_count = 0;
-    int up_pitch_count = 0;
-
-    for (int i = 0; i < PACKET_SIZE; i++)
+    else if(strcmp(last_gesture,"DownMove") != 0 && strcmp(last_gesture,"RotateUp") != 0)
     {
-        if (sampled_pitch_values[i] < -(DEADZONE_PITCH + PITCH_UP_LIMIT))
-        {
-            down_pitch_count++;
-        }
-        else if(sampled_pitch_values[i] > (DEADZONE_ROLL + PITCH_DN_LIMIT))
-        {
-        	up_pitch_count++;
-        }
+    	last_gesture = "NULL";
     }
-    if (down_pitch_count >= PACKET_SIZE / 2)
-    {
-        sendBxString("Down");
-    }
-    else if (up_pitch_count >= PACKET_SIZE / 2)
-	{
-		sendBxString("Rotate");
-	}
+    return 0;
 }
 
 void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
@@ -391,9 +408,11 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 		{
 			// do prediction call
 			curr_sample_num = 0;
-			sendBxString("PRD");
-			detect_pitch(curr_packet.pitch);
-			detect_roll(curr_packet.roll);
+			sendBxString("PRED");
+			if(detect_roll(curr_packet.roll) == 0)
+			{
+				detect_pitch(curr_packet.pitch);
+			}
 		}
 		else
 		{
@@ -422,16 +441,16 @@ void setup_IMU_GPIO(void)
 
 void setup_IMU_UART(void)
 {
-	RCC -> APB2ENR |= RCC_APB2ENR_USART1EN;                // clock on for usart1
-	USART1 -> CR1 &= ~USART_CR1_UE;                        // turn off for config
-	USART1 -> CR1 &= ~USART_CR1_M;                         // 8 bit word length
-	USART1 -> CR2 &= ~USART_CR2_STOP;                      // 1 stop bits
-	USART1 -> CR1 &= ~USART_CR1_PCE;                       // parity disable
-	USART1 -> CR1 &= ~USART_CR1_OVER8;                     // 16x oversampling
-	USART1 -> BRR = 48000000 / 115200;					   // 115200 baud rate
-	USART1 -> CR1 |= USART_CR1_RE;				           // receiver enable
-	USART1 -> CR3 |= USART_CR3_DMAR;					   // come dma steal my data
-	USART1 -> CR1 |= USART_CR1_UE;                         // enable usart
+	RCC -> APB2ENR |= RCC_APB2ENR_USART1EN;             // clock on for usart1
+	USART1 -> CR1 &= ~USART_CR1_UE;                     // turn off for config
+	USART1 -> CR1 &= ~USART_CR1_M;                      // 8 bit word length
+	USART1 -> CR2 &= ~USART_CR2_STOP;                   // 1 stop bits
+	USART1 -> CR1 &= ~USART_CR1_PCE;                    // parity disable
+	USART1 -> CR1 &= ~USART_CR1_OVER8;                  // 16x oversampling
+	USART1 -> BRR = 48000000 / 115200;					// 115200 baud rate
+	USART1 -> CR1 |= USART_CR1_RE;				        // receiver enable
+	USART1 -> CR3 |= USART_CR3_DMAR;					// come dma steal my data
+	USART1 -> CR1 |= USART_CR1_UE;                      // enable usart
 }
 
 void setup_IMU_DMA()
@@ -449,7 +468,7 @@ void setup_IMU_DMA()
 	DMA1_Channel3->CCR |= DMA_CCR_PL_0 | DMA_CCR_PL_1;  // highest priority
 	DMA1_Channel3->CCR |= DMA_CCR_TCIE; 				// int on transfer complete
 	DMA1_Channel3->CCR |= DMA_CCR_EN;					// enable for dma
-	NVIC -> ISER[0] |= (1<<DMA1_Ch2_3_DMA2_Ch1_2_IRQn);
+	NVIC -> ISER[0] |= (1 << DMA1_Ch2_3_DMA2_Ch1_2_IRQn);
 }
 
 void sendBxChar(char txdata)
@@ -461,7 +480,7 @@ void sendBxChar(char txdata)
 void sendBxString(char* data)
 {
   int i = 0;
-  while(data[i] != '\0')
+  while(data[i] != '\0' && (strcmp(last_gesture, data) != 0))
   {
     sendBxChar(data[i]);
     i++;
