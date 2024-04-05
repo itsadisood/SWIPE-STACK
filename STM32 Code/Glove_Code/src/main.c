@@ -319,7 +319,7 @@ struct Packet
 struct Packet curr_packet;
 
 int curr_sample_num = 0;
-char* last_gesture = "NULL";
+char last_gesture = 'N';
 
 float convertToFloat(uint8_t lsb, uint8_t msb)
 {
@@ -348,18 +348,18 @@ void detect_pitch(float sampled_pitch_values[])
     }
     if (down_pitch_count >= PACKET_SIZE / 2)
     {
-        sendBxString("DownMove");
-        last_gesture = "DownMove";
+        sendBxChar('D');
+        last_gesture = 'D';
     }
     else if (up_pitch_count >= PACKET_SIZE / 2)
-	{
-		sendBxString("RotateUp");
-		last_gesture = "RotateUp";
-	}
-    else if(strcmp(last_gesture,"LftSwipe") != 0 && strcmp(last_gesture,"RgtSwipe") != 0)
-	{
-    	last_gesture = "NULL";
-	}
+		{
+		sendBxChar('U');
+		last_gesture = 'U';
+		}
+    else if((last_gesture != 'L') && (last_gesture != 'R'))
+		{
+    	last_gesture = 'N';
+		}
 }
 
 int detect_roll(float sampled_roll_values[])
@@ -382,19 +382,19 @@ int detect_roll(float sampled_roll_values[])
     // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
     if (left_roll_count >= PACKET_SIZE / 2)
     {
-        sendBxString("LftSwipe"); // left swipe
-        last_gesture = "LftSwipe";
-        return 1;
+    	sendBxChar('L'); // left swipe
+      last_gesture = 'L';
+      return 1;
     }
     else if (right_roll_count >= PACKET_SIZE / 2)
-	{
-		sendBxString("RgtSwipe"); // right swipe
-		last_gesture = "RgtSwipe";
-		return 1;
-	}
-    else if(strcmp(last_gesture,"DownMove") != 0 && strcmp(last_gesture,"RotateUp") != 0)
+		{
+			sendBxChar('R'); // right swipe
+			last_gesture = 'R';
+			return 1;
+		}
+    else if((last_gesture != 'U') && (last_gesture != 'D'))
     {
-    	last_gesture = "NULL";
+    	last_gesture = 'N';
     }
     return 0;
 }
@@ -408,7 +408,7 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 		{
 			// do prediction call
 			curr_sample_num = 0;
-			sendBxString("PRED");
+			sendBxChar('P');
 			if(detect_roll(curr_packet.roll) == 0)
 			{
 				detect_pitch(curr_packet.pitch);
@@ -425,7 +425,7 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 	}
 	else // got mis-aligned, cleanup and start again.
 	{
-		sendBxString("!MSALG!");
+		sendBxChar('M');
 		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		setup_IMU_DMA();
 	}
@@ -473,8 +473,11 @@ void setup_IMU_DMA()
 
 void sendBxChar(char txdata)
 {
-  while(!(USART5->ISR & USART_ISR_TXE)) {}
-      USART5->TDR = txdata;
+	if (txdata != last_gesture)
+	{
+		while(!(USART5->ISR & USART_ISR_TXE)) {}
+  	USART5->TDR = txdata;
+	}
 }
 
 void sendBxString(char* data)
