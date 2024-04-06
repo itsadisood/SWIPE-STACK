@@ -296,17 +296,17 @@ void BluetoothSetup()
 
 // sizing constants
 #define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
-#define PREDICTIONS_PER_SECOND 	5 								// # of times the entire toolchain runs to display a output
+#define PREDICTIONS_PER_SECOND 		5 								// # of times the entire toolchain runs to display a output
 #define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // gesture senstivity thresholds
-#define DEADZONE_PITCH				3								// up and down twist dead zone
-#define PITCH_UP_LIMIT				27								// rotate
-#define PITCH_DN_LIMIT				12								// place down
+#define DEADZONE_PITCH				5								// up and down twist dead zone
+#define PITCH_UP_LIMIT				23								// rotate
+#define PITCH_DN_LIMIT				23								// place down
 
 #define DEADZONE_ROLL 				5								// left and right twist dead zone
-#define ROLL_LFT_LIMIT 			27								// swipe left
-#define ROLL_RGT_LIMIT				27								// swipe right
+#define ROLL_LFT_LIMIT 				28								// swipe left
+#define ROLL_RGT_LIMIT				28								// swipe right
 
 uint8_t data_fifo[FIFOSIZE];
 
@@ -330,72 +330,61 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 	return final_number;
 }
 
-void detect_pitch(float sampled_pitch_values[])
+int detect_gesture(struct Packet curr_packet)
 {
     int down_pitch_count = 0;
     int up_pitch_count = 0;
-
-    for (int i = 0; i < PACKET_SIZE; i++)
-    {
-        if (sampled_pitch_values[i] < -(DEADZONE_PITCH + PITCH_DN_LIMIT))
-        {
-            down_pitch_count++;
-        }
-        else if(sampled_pitch_values[i] > (DEADZONE_PITCH + PITCH_UP_LIMIT))
-        {
-        	up_pitch_count++;
-        }
-    }
-    if (down_pitch_count >= PACKET_SIZE / 2)
-    {
-        sendBxChar('D');
-        last_gesture = 'D';
-    }
-    else if (up_pitch_count >= PACKET_SIZE / 2)
-		{
-		sendBxChar('U');
-		last_gesture = 'U';
-		}
-    else if((last_gesture != 'L') && (last_gesture != 'R'))
-		{
-    	last_gesture = 'N';
-		}
-}
-
-int detect_roll(float sampled_roll_values[])
-{
     int left_roll_count = 0;
     int right_roll_count = 0;
 
     for (int i = 0; i < PACKET_SIZE; i++)
     {
-        // Check if roll is outside deadzones and thresholds
-        if (sampled_roll_values[i] < -(DEADZONE_ROLL + ROLL_LFT_LIMIT))
+        if (curr_packet.pitch[i] < -(DEADZONE_PITCH + PITCH_UP_LIMIT))
         {
-            left_roll_count++; // Increment roll count for significant roll samples
+            up_pitch_count++;
         }
-        else if(sampled_roll_values[i] > (DEADZONE_ROLL + ROLL_RGT_LIMIT))
+        if(curr_packet.pitch[i] > (DEADZONE_PITCH + PITCH_DN_LIMIT))
         {
-        	right_roll_count++;
+        	down_pitch_count++;
         }
-    }
-    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
-    if (left_roll_count >= PACKET_SIZE / 2)
-    {
-    	sendBxChar('L'); // left swipe
-      last_gesture = 'L';
-      return 1;
-    }
-    else if (right_roll_count >= PACKET_SIZE / 2)
+		if (curr_packet.roll[i] < -(DEADZONE_ROLL + ROLL_RGT_LIMIT))
 		{
-			sendBxChar('R'); // right swipe
-			last_gesture = 'R';
-			return 1;
+			right_roll_count++;
 		}
-    else if((last_gesture != 'U') && (last_gesture != 'D'))
-    {
-    	last_gesture = 'N';
+		if(curr_packet.roll[i] > (DEADZONE_ROLL + ROLL_LFT_LIMIT))
+		{
+			left_roll_count++;
+		}
     }
+
+    if (down_pitch_count >= PACKET_SIZE / 2)
+    {
+        sendBxChar('D');
+        last_gesture = 'D';
+        return 1;
+    }
+    else if (up_pitch_count >= PACKET_SIZE / 2)
+	{
+		sendBxChar('U');
+		last_gesture = 'U';
+		return 1;
+	}
+    else if (left_roll_count >= PACKET_SIZE / 2)
+	{
+		sendBxChar('L');
+        last_gesture = 'L';
+        return 1;
+	}
+	else if (right_roll_count >= PACKET_SIZE / 2)
+	{
+		sendBxChar('R');
+		last_gesture = 'R';
+		return 1;
+	}
+    else
+	{
+    	last_gesture = 'N';
+	}
     return 0;
 }
 
@@ -408,11 +397,9 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 		{
 			// do prediction call
 			curr_sample_num = 0;
-			sendBxChar('P');
-			if(detect_roll(curr_packet.roll) == 0)
-			{
-				detect_pitch(curr_packet.pitch);
-			}
+			//sendBxChar('P');
+			//last_gesture = 'P';
+			detect_gesture(curr_packet);
 		}
 		else
 		{
@@ -425,7 +412,8 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 	}
 	else // got mis-aligned, cleanup and start again.
 	{
-		sendBxChar('M');
+//		sendBxChar('M');
+//		last_gesture = 'M';
 		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		setup_IMU_DMA();
 	}
@@ -475,7 +463,7 @@ void sendBxChar(char txdata)
 {
 	if (txdata != last_gesture)
 	{
-		while(!(USART5->ISR & USART_ISR_TXE)) {}
+	while(!(USART5->ISR & USART_ISR_TXE)) {}
   	USART5->TDR = txdata;
 	}
 }
