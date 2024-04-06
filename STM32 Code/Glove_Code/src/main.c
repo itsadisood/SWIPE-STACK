@@ -361,6 +361,7 @@ int detect_gesture(struct Packet curr_packet)
     {
         sendBxChar('D');
         last_gesture = 'D';
+<<<<<<< HEAD
         return 1;
     }
     else if (up_pitch_count >= PACKET_SIZE / 2)
@@ -385,6 +386,54 @@ int detect_gesture(struct Packet curr_packet)
 	{
     	last_gesture = 'N';
 	}
+=======
+    }
+    else if (up_pitch_count >= PACKET_SIZE / 2)
+		{
+		sendBxChar('U');
+		last_gesture = 'U';
+		}
+    else if((last_gesture != 'L') && (last_gesture != 'R'))
+		{
+    	last_gesture = 'N';
+		}
+}
+
+int detect_roll(float sampled_roll_values[])
+{
+    int left_roll_count = 0;
+    int right_roll_count = 0;
+
+    for (int i = 0; i < PACKET_SIZE; i++)
+    {
+        // Check if roll is outside deadzones and thresholds
+        if (sampled_roll_values[i] < -(DEADZONE_ROLL + ROLL_LFT_LIMIT))
+        {
+            left_roll_count++; // Increment roll count for significant roll samples
+        }
+        else if(sampled_roll_values[i] > (DEADZONE_ROLL + ROLL_RGT_LIMIT))
+        {
+        	right_roll_count++;
+        }
+    }
+    // Check if the number of significant roll samples exceeds a threshold (e.g., 5 out of 10)
+    if (left_roll_count >= PACKET_SIZE / 2)
+    {
+    	sendBxChar('L'); // left swipe
+      last_gesture = 'L';
+      return 1;
+    }
+    else if (right_roll_count >= PACKET_SIZE / 2)
+		{
+			sendBxChar('R'); // right swipe
+			last_gesture = 'R';
+			return 1;
+		}
+    else if((last_gesture != 'U') && (last_gesture != 'D'))
+    {
+    	last_gesture = 'N';
+    }
+>>>>>>> 6a846deba67fdc7baba1adb98611dc4f94a2abfa
     return 0;
 }
 
@@ -397,9 +446,17 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 		{
 			// do prediction call
 			curr_sample_num = 0;
+<<<<<<< HEAD
 			//sendBxChar('P');
 			//last_gesture = 'P';
 			detect_gesture(curr_packet);
+=======
+			sendBxChar('P');
+			if(detect_roll(curr_packet.roll) == 0)
+			{
+				detect_pitch(curr_packet.pitch);
+			}
+>>>>>>> 6a846deba67fdc7baba1adb98611dc4f94a2abfa
 		}
 		else
 		{
@@ -412,8 +469,12 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 	}
 	else // got mis-aligned, cleanup and start again.
 	{
+<<<<<<< HEAD
 //		sendBxChar('M');
 //		last_gesture = 'M';
+=======
+		sendBxChar('M');
+>>>>>>> 6a846deba67fdc7baba1adb98611dc4f94a2abfa
 		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		setup_IMU_DMA();
 	}
@@ -463,7 +524,11 @@ void sendBxChar(char txdata)
 {
 	if (txdata != last_gesture)
 	{
+<<<<<<< HEAD
 	while(!(USART5->ISR & USART_ISR_TXE)) {}
+=======
+		while(!(USART5->ISR & USART_ISR_TXE)) {}
+>>>>>>> 6a846deba67fdc7baba1adb98611dc4f94a2abfa
   	USART5->TDR = txdata;
 	}
 }
