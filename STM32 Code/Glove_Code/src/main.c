@@ -41,6 +41,10 @@ const char *TX_MACADDR_L = "E4E11295D794";	 // CHANGE THIS LATER
 const char *TX_NAME_L = "GloveL";
 const char *TX_ADVINT_L  = "100ms";
 
+const char *HUB_MADADDR = "E4E11295FAB6";
+const char *HUB_NAME    = "Hub";
+const char *HUB_ADVINT  = "100ms";
+
 // retrieve MAC address of bluetooth module
 void getATAddr()
 {
@@ -83,15 +87,15 @@ void sendATStart()
 void sendATDisc()
 {
 	char *discTx = "AT+DISC?";
-	char discRx[8] = {}; //"OK+DISCS"
-	for(uint32_t i = 0; i < 8; i++)
+	char discRx[100] = {}; //"OK+DISCS"
+	for(uint32_t i = 0; discTx[i] != '\0'; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_TXE)){}
 		USART5 -> TDR = discTx[i];
 	}
 
 	// Is this required?
-	for(uint32_t i = 0; i < 8; i++)
+	for(uint32_t i = 0; i < 100; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_RXNE)){}
 		discRx[i] = USART5 -> RDR;
@@ -105,7 +109,7 @@ void sendATDisc()
 **/
 void setATRole()
 {
-	char roleTx[8] = "AT+ROLE0";
+	char roleTx[8] = "AT+ROLE1";
 	char roleRx[8] = {};
 
 	for(uint32_t i = 0; i < 8; i++)
@@ -124,7 +128,7 @@ void setATRole()
 // set advertising interval (not used commonly)
 void setAdvInterval()
 {
-	char* advTx = "AT+ADVI9";
+	char* advTx = "AT+ADVI0";
 	char advRx[8] = {};
 
 	// send message to obtain advertising interval
@@ -169,24 +173,24 @@ void sendATCheck()
 			  -> if master, wait for AT+DISC to discover
  	 AT+IMME0 -> start working from get go.
 **/
-void setATImme()
-{
-
-	char immeTx[8] = "AT+IMME0";
-	char immeRx[8] = {};
-
-	for(uint32_t i = 0; i < 8; i++)
-	{
-		while(!(USART5->ISR & USART_ISR_TXE)){}
-		USART5 -> TDR = immeTx[i];
-	}
-
-	for(uint32_t i = 0; i < 8; i++)
-	{
-		while(!(USART5->ISR & USART_ISR_RXNE)){}
-		immeRx[i] = USART5 -> RDR;
-	}
-}
+//void setATImme()
+//{
+//
+//	char immeTx[8] = "AT+IMME0";
+//	char immeRx[8] = {};
+//
+//	for(uint32_t i = 0; i < 8; i++)
+//	{
+//		while(!(USART5->ISR & USART_ISR_TXE)){}
+//		USART5 -> TDR = immeTx[i];
+//	}
+//
+//	for(uint32_t i = 0; i < 8; i++)
+//	{
+//		while(!(USART5->ISR & USART_ISR_RXNE)){}
+//		immeRx[i] = USART5 -> RDR;
+//	}
+//}
 
 // change name of bluetooth module (preserved across power outs)
 void setBxName()
@@ -251,6 +255,44 @@ void sendATReset()
 	  }
 }
 
+// Directly connect to a specified device through MAC Address
+void sendATCon()
+{
+	char * conTx = "AT+CONE4E11295FAB6";
+	char   conRx[8] = {};
+
+	for(uint32_t i = 0; conTx[i] != '\0'; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = conTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		conRx[i] = USART5 -> RDR;
+	}
+}
+
+void setATImme()
+{
+	char * immeTx = "AT+IMME1";
+	char immeRx[8] = {};
+
+	for(uint32_t i = 0; immeTx[i] != '\0'; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = immeTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART5 -> RDR;
+	}
+}
+
+
 void setup_BX_GPIO()
 {
 	RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;                    // Enable GPIO clock
@@ -282,8 +324,11 @@ void BluetoothSetup()
 //	sendATCheck();
 //	getATAddr();
 //	setBxName();
-//	setATRole();
-//	setATImme();
+	setAdvInterval();
+	setATRole();
+	setATImme();
+	sendATDisc();
+//	sendATCon();
 //	sendATReset();
 //	sendATStart();
 //	sendATDisc();
