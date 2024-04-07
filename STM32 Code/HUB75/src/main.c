@@ -8,9 +8,9 @@
 */
 
 #include "tetris.h"
-#include <sys/queue.h>
 
 pixel_t screen [MEMSIZE];
+
 
 int
 main ()

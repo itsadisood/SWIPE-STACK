@@ -193,7 +193,7 @@ clear_row (pixel_t * screen, int y)
   for(int x = 6; x < 26; x++)
   {
     // Compute the location
-    uint8_t loc = (x & 0xf) * HUB75_C + (y * 2);
+    uint16_t loc = (x & 0xf) * HUB75_C + (y * 2);
 
     if (x > 0xf)
     {

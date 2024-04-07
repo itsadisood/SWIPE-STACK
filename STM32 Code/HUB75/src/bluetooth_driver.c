@@ -6,13 +6,13 @@
  *         Aditya Sood (sood12@purdue.edu)
 **/
 
-char MOVE;
-
 #include "bluetooth_driver.h"
 
 /* Coinfigure the peripherals required for UART transmission */
 
 /* Bluetooth Drivers */
+
+// char MOVE = 'N';
 
 // Factory reset module (CAREFUL)
 void sendATRenew()
@@ -142,15 +142,36 @@ void sendATReset()
 	  }
 }
 
+void setATImme()
+{
+	char* immeTx = "AT+IMME0";
+	char immeRx[8] = {};
+
+	for(uint32_t i = 0; immeTx[i] != '\0'; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_TXE)){}
+		USART4 -> TDR = immeTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART4->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART4 -> RDR;
+	}
+}
+
 void ss_bluetooth()
 {
   init_io_bt();
   setup_uart_bt();
+  init_dma_bt();
+  enable_dma_bt();
 //  sendATRenew();
 //	sendATCheck();
-	getATAddr();
+//	getATAddr();
 //	setBxName();
 //	setATRole();
+//	setATImme();
 //	sendATReset();
 }
 
@@ -175,10 +196,10 @@ setup_uart_bt ()
 	USART4 -> CR1 = 0;                                            
 	USART4 -> BRR = 48000000 / 9600;					  
 	USART4 -> CR1 |= USART_CR1_TE;				           
-	USART4 -> CR1 |= USART_CR1_RE;				           
+	USART4 -> CR1 |= USART_CR1_RE;
+	USART4 -> CR3 |= USART_CR3_DMAR;
+//	USART4 -> CR1 |= USART_CR1_RXNEIE;
 	USART4 -> CR1 |= USART_CR1_UE;   
-	USART4 -> CR1 |= USART_CR1_RXNEIE;
-	USART4 -> CR3 |= USART_CR3_DMAR;               
   // wait for TX and RX to be ready
 	while(!((USART4 -> ISR) & (USART_ISR_TEACK | USART_ISR_REACK)));
 }
@@ -187,11 +208,12 @@ setup_uart_bt ()
 void
 init_dma_bt ()
 {
-  DMA1_Channel6 -> CCR &= ~DMA_CCR_EN;
-	DMA1_Channel6 -> CMAR = &MOVE;
-	DMA1 -> RMPCR |= DMA_RMPCR2_CH2_USART4_RX;
+	RCC -> AHBENR |= RCC_AHBENR_DMA1EN;
+	DMA1_Channel6 -> CCR &= ~DMA_CCR_EN;
+	DMA1_Channel6 -> CMAR = (uint32_t) &MOVE;
 	DMA1_Channel6 -> CPAR = (uint32_t) &(USART4->RDR);
 	DMA1_Channel6 -> CNDTR = sizeof (char);
+	DMA1_Channel6 -> CCR |= DMA_CCR_CIRC;
 	DMA1_Channel6 -> CCR |= DMA_CCR_PL;
 }
 
@@ -200,3 +222,5 @@ enable_dma_bt ()
 {
 	DMA1_Channel6 -> CCR |= DMA_CCR_EN;
 }
+
+

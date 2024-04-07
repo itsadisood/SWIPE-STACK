@@ -28,6 +28,7 @@ move_shape (pixel_t * screen, Piece_t piece)
   sr_coord_board (screen, positions, piece.color, 1);
 }
 
+
 //*************************************************************************************************
 // is_valid_space checks the piece's position against the locked_positions array which is an array
 // of 64-bit unsigned integers, where the array index represents the row, while the bits of the
@@ -61,10 +62,28 @@ check_row_fill (uint8_t s, uint64_t mask)
     block = locked_positions [s + i] & mask;
 
     // check if it is filled
-    if (!(block & mask)) return false;
+    if(!block) return false;
   }
   return true;
 }
+
+//static bool
+//check_row_fill (uint8_t s, uint64_t mask)
+//{
+//	uint64_t prev, curr;
+//	for(int i = 0; i < NUM_ROWS_BOARD - 5; i++)
+//	{
+//		prev = locked_positions [s + i] & mask;
+//		curr = locked_positions [s + i + 1] & mask;
+//    if (!prev) return false;
+//    if (!curr) return false;
+//		if ((prev != curr))
+//		{
+//			return false;
+//		}
+//	}
+//	return true;
+//}
 
 static uint32_t
 check_rows_clear ()
@@ -178,9 +197,6 @@ tetris (pixel_t * screen)
   Piece_t piece;
   // initialize some game driver parameters
   fall_time = 0;
-  KEY_LEFT  = false;
-  KEY_RIGHT = false;
-  KEY_ROT   = false;
 
   bool new_piece = true;
   game_init (screen);
@@ -201,7 +217,7 @@ tetris (pixel_t * screen)
       new_piece = false;
     }
     // fall dowm
-    else if (fall_time >= 300)
+    else if (fall_time >= 3000)
     {
       // new position
       piece.y_coord -= STEP;
@@ -231,7 +247,7 @@ tetris (pixel_t * screen)
       fall_time = 0;
     }
     // move left
-    else if (KEY_LEFT)
+    else if (MOVE == 'R')
     {
       // new position
       if (piece.y_coord <= (47 - piece.shape.pmap->height))
@@ -252,10 +268,10 @@ tetris (pixel_t * screen)
         }
       }
 
-      KEY_LEFT = false;
+      MOVE = 'N';
     }
     // move right
-    else if (KEY_RIGHT)
+    else if (MOVE == 'L')
     {
       // new position
       if(piece.y_coord <= (47 - piece.shape.pmap->height)) // INCLUDE CROPPED SHAPE HEIGHT
@@ -276,10 +292,10 @@ tetris (pixel_t * screen)
         }
       }
 
-      KEY_RIGHT = false;
+      MOVE = 'N';
     }
     // rotation
-    else if (KEY_ROT)
+    else if (MOVE == 'U')
     {
       uint8_t prev_rotation = piece.rotation;
 
@@ -299,7 +315,34 @@ tetris (pixel_t * screen)
         memcpy (positions, p_positions, sizeof (p_positions));
       }
 
-      KEY_ROT = false;
+      MOVE = 'N';
+    }
+
+    // Quick Drop
+    else if (MOVE == 'D')
+    {
+      while(is_valid_space (locked_positions, piece))
+      {
+        piece.y_coord -= STEP; 
+        convert_shape_format (positions, piece);
+      }
+
+      // restore shape 
+      piece.y_coord += STEP; 
+      convert_shape_format (positions, piece); // restore proper positions for drawing
+      move_shape (screen, piece);
+      // memcpy (positions, p_positions, sizeof (p_positions));
+
+      if (check_loss ()) break; 
+
+      // set for new piece fetch 
+      new_piece = true; 
+      lock_pos(locked_positions, piece);
+
+      // check if any rows can be cleared
+      row_check (screen);
+
+      MOVE = 'N';
     }
 
     // update the previous
