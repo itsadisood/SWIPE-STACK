@@ -19,6 +19,12 @@ uint64_t locked_positions[HUB75_H] =
   0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
 
+char scoreBuff[17] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+
+uint16_t level    = 0;
+uint64_t scoreNum = 0;
+
+
 static void
 move_shape (pixel_t * screen, Piece_t piece)
 {
@@ -136,8 +142,21 @@ row_check (pixel_t * screen)
         update_lock_pos (i - rows_cleared); 
         drop_rows (screen, i + 1 - rows_cleared);
         rows_cleared++;
+        if(!(rows_cleared % 2))
+          level++; // crank up level every 2 row clears
       }
     }
+  }
+  switch(rows_cleared)
+  {
+    case 1: scoreNum += 40   * (level + 1); // Single
+            break;
+    case 2: scoreNum += 100  * (level + 1); // Double
+            break;
+    case 3: scoreNum += 300  * (level + 1); // Triple
+            break;
+    case 4: scoreNum += 1200 * (level + 1); // Tetris
+            break;
   }
 }
 
@@ -217,7 +236,7 @@ tetris (pixel_t * screen)
       new_piece = false;
     }
     // fall dowm
-    else if (fall_time >= 3000)
+    else if (fall_time >= (BASE_TIME - (level * 50)))
     {
       // new position
       piece.y_coord -= STEP;
@@ -247,7 +266,7 @@ tetris (pixel_t * screen)
       fall_time = 0;
     }
     // move left
-    else if (MOVE == 'R')
+    else if (MOVE == 'L')
     {
       // new position
       if (piece.y_coord <= (47 - piece.shape.pmap->height))
@@ -271,7 +290,7 @@ tetris (pixel_t * screen)
       MOVE = 'N';
     }
     // move right
-    else if (MOVE == 'L')
+    else if (MOVE == 'R')
     {
       // new position
       if(piece.y_coord <= (47 - piece.shape.pmap->height)) // INCLUDE CROPPED SHAPE HEIGHT
@@ -325,13 +344,15 @@ tetris (pixel_t * screen)
       {
         piece.y_coord -= STEP; 
         convert_shape_format (positions, piece);
+        scoreNum += 1; // award bonus
       }
 
       // restore shape 
       piece.y_coord += STEP; 
-      convert_shape_format (positions, piece); // restore proper positions for drawing
+      scoreNum -= 1;
+      // restore proper positions for drawing
+      convert_shape_format (positions, piece);
       move_shape (screen, piece);
-      // memcpy (positions, p_positions, sizeof (p_positions));
 
       if (check_loss ()) break; 
 
@@ -347,6 +368,10 @@ tetris (pixel_t * screen)
 
     // update the previous
     memcpy (p_positions, positions, sizeof(positions));
+
+    // update scoreBuffer
+    sprintf(scoreBuff, "%llu", scoreNum);
+    updt_score(scoreBuff);
   }
 
   init_screen (screen, BLACK);

@@ -1,12 +1,9 @@
-/*
- * hub75_driver.c
- *
- * Vishnu Lagudu
- * vlagudu@purdue.edu
- *
- * Driver for HUB75 matrix using the DMA
- * and timers 
- */
+/**
+ * @brief Driver for HUB75 matrix using the DMA 
+ *        and timers
+ * @author Vishnu Lagudu (vlagudu@purdue.edu)
+ *         Justin Cambridge (jcambri@purdue.edu)
+**/
 
 #include "hub75_driver.h"
 
