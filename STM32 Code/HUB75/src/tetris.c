@@ -142,11 +142,10 @@ row_check (pixel_t * screen)
         update_lock_pos (i - rows_cleared); 
         drop_rows (screen, i + 1 - rows_cleared);
         rows_cleared++;
-        if(!(rows_cleared % 2))
-          level++; // crank up level every 2 row clears
       }
     }
   }
+
   switch(rows_cleared)
   {
     case 1: scoreNum += 40   * (level + 1); // Single
@@ -369,9 +368,13 @@ tetris (pixel_t * screen)
     // update the previous
     memcpy (p_positions, positions, sizeof(positions));
 
+    if(scoreNum > ((level + 1) * 200))
+    {
+    	level++; // crank up the level after every 200 points
+    }
     // update scoreBuffer
-    sprintf(scoreBuff, "%llu", scoreNum);
-    updt_score(scoreBuff);
+//    sprintf(scoreBuff, "%llu", scoreNum);
+//    updt_score(scoreBuff);
   }
 
   init_screen (screen, BLACK);
