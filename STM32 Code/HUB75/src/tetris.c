@@ -371,10 +371,14 @@ tetris (pixel_t * screen)
     if(scoreNum > ((level + 1) * 200))
     {
     	level++; // crank up the level after every 200 points
+    	if(level == 11)
+    	{
+    		level = 10; // cap level
+    	}
     }
     // update scoreBuffer
-//    sprintf(scoreBuff, "%llu", scoreNum);
-//    updt_score(scoreBuff);
+    sprintf(scoreBuff, "%llu", scoreNum);
+    updt_score(scoreBuff);
   }
 
   init_screen (screen, BLACK);

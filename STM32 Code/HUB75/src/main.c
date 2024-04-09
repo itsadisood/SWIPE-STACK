@@ -18,7 +18,7 @@ main ()
   // set the random seed
   set_random_seed ();
   ss_bluetooth    ();
-//  setup_oled      ();
+  setup_oled      ();
 
   // REMEMBER: DO NOT ZERO OUT PA AFR IN OLED (alr done in bt)
 
