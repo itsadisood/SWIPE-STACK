@@ -235,7 +235,7 @@ tetris (pixel_t * screen)
       new_piece = false;
     }
     // fall dowm
-    else if (fall_time >= (BASE_TIME - (level * 50)))
+    else if (fall_time >= (BASE_TIME - (level * 20)))
     {
       // new position
       piece.y_coord -= STEP;
