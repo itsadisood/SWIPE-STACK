@@ -1,5 +1,5 @@
 #include "tetris.h"
-
+#include "font.h"
 // fixed size arrays
 coord_t positions   [SHAPE_NUM_PIX];
 coord_t p_positions [SHAPE_NUM_PIX];
@@ -19,7 +19,8 @@ uint64_t locked_positions[HUB75_H] =
   0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
 };
 
-char scoreBuff[17] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+char scoreBuff[10] = {0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0};
+char levelBuff[3] = {0x0, 0x0, 0x0};
 
 uint16_t level    = 0;
 uint64_t scoreNum = 0;
@@ -203,14 +204,38 @@ check_loss ()
   return false;
 }
 
+// return game variables to initial state for next run
+void clean_up()
+{
+	uint64_t og_positions[HUB75_H] =
+	{
+	  0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000,
+	  0xffffffffffffffff, 0xffffffffffffffff, 0x0000000000000003, 0x0000000000000003,
+	  0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	  0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	  0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	  0x0000000000000003, 0x0000000000000003, 0x0000000000000003, 0x0000000000000003,
+	  0x0000000000000003, 0x0000000000000003, 0xffffffffffffffff, 0xffffffffffffffff,
+	  0x0000000000000000, 0x0000000000000000, 0x0000000000000000, 0x0000000000000000
+	};
+	scoreNum = 0;
+	level    = 0;
+	init_score();
+
+	memcpy(locked_positions, og_positions, sizeof(og_positions));
+}
+
 /**
  * @brief  Main game loop that runs the game
  * @param  screen 
- * @retval boolean (true or false) determing loss
+ * @retval integer containing score
 */
-void
+int
 tetris (pixel_t * screen)
 {
+  // clean up from last game
+  clean_up();
+
   // initialize game pieces
   Piece_t piece;
   // initialize some game driver parameters
@@ -235,7 +260,7 @@ tetris (pixel_t * screen)
       new_piece = false;
     }
     // fall dowm
-    else if (fall_time >= (BASE_TIME - (level * 20)))
+    else if (fall_time >= (BASE_TIME - (level * 10)))
     {
       // new position
       piece.y_coord -= STEP;
@@ -378,8 +403,148 @@ tetris (pixel_t * screen)
     }
     // update scoreBuffer
     sprintf(scoreBuff, "%llu", scoreNum);
-    updt_score(scoreBuff);
+    sprintf(levelBuff, "%hu", level);
+    updt_score(scoreBuff, levelBuff);
   }
 
   init_screen (screen, BLACK);
+  return scoreNum;
+}
+
+/**
+ * @brief  End Screen for Game
+ * @param  screen
+*/
+void
+lose_screen (pixel_t * screen)
+{
+	Font_t G = font_init(6, 0);
+	sr_font (screen, G.x_coord, G.y_coord, G.letter.pmap[0], G.color, 1);
+
+	Font_t A = font_init(0, 0);
+	sr_font (screen, A.x_coord, A.y_coord + 8, A.letter.pmap[0], A.color, 1);
+
+	Font_t M = font_init(12, 0);
+	sr_font (screen, M.x_coord, M.y_coord + 16, M.letter.pmap[0], M.color, 1);
+
+	Font_t E = font_init(4, 0);
+	sr_font (screen, E.x_coord, E.y_coord + 24, E.letter.pmap[0], E.color, 1);
+
+	Font_t O = font_init(14, 1);
+	sr_font (screen, O.x_coord, O.y_coord, O.letter.pmap[0], O.color, 1);
+
+	Font_t V = font_init(21, 1);
+	sr_font (screen, V.x_coord, V.y_coord + 8, V.letter.pmap[0], V.color, 1);
+
+	Font_t E_2 = font_init(4, 1);
+	sr_font (screen, E_2.x_coord, E_2.y_coord + 16, E_2.letter.pmap[0], E_2.color, 1);
+
+	Font_t R = font_init(17, 1);
+	sr_font (screen, R.x_coord, R.y_coord + 24, R.letter.pmap[0], R.color, 1);
+
+	while(1)
+	{
+		if(MOVE == 'X')
+		{
+			clean_up(); // clear score and other game vars
+			MOVE = 'N';
+			return;
+		}
+	}
+
+}
+
+/**
+ * @brief  End Screen for Game
+ * @param  screen
+*/
+void
+splash_screen (pixel_t * screen)
+{
+	init_screen (screen, BLACK);
+
+	Font_t S = font_init(18, 0);
+	sr_font (screen, S.x_coord, S.y_coord, S.letter.pmap[0], S.color, 1);
+
+	Font_t W = font_init(22, 0);
+	sr_font (screen, W.x_coord, W.y_coord + 8, W.letter.pmap[0], W.color, 1);
+
+	Font_t I = font_init(8, 0);
+	sr_font (screen, I.x_coord, I.y_coord + 16, I.letter.pmap[0], I.color, 1);
+
+	Font_t P = font_init(15, 0);
+	sr_font (screen, P.x_coord, P.y_coord + 24, P.letter.pmap[0], P.color, 1);
+
+	Font_t E = font_init(4, 0);
+	sr_font (screen, E.x_coord, E.y_coord + 32, E.letter.pmap[0], E.color, 1);
+
+	Font_t S_2 = font_init(18, 1);
+	sr_font (screen, S_2.x_coord, S_2.y_coord, S_2.letter.pmap[0], S_2.color, 1);
+
+	Font_t T = font_init(19, 1);
+	sr_font (screen, T.x_coord, T.y_coord + 8, T.letter.pmap[0], T.color, 1);
+
+	Font_t A = font_init(0, 1);
+	sr_font (screen, A.x_coord, A.y_coord + 16, A.letter.pmap[0], A.color, 1);
+
+	Font_t C = font_init(2, 1);
+	sr_font (screen, C.x_coord, C.y_coord + 24, C.letter.pmap[0], C.color, 1);
+
+	Font_t K = font_init(10, 1);
+	sr_font (screen, K.x_coord, K.y_coord + 32, K.letter.pmap[0], K.color, 1);
+
+
+
+
+	// mimic blocks falling for splash screen
+	Piece_t piece;
+	fall_time = 0;
+
+	bool new_piece = true;
+	setup_tim3(1000, 10);
+	while(1)
+	{
+		if(MOVE == 'X')
+		{
+			break;
+		}
+		if (new_piece)
+		{
+			piece = piece_init();
+			piece.x_coord = 19;
+			piece.y_coord = 47;
+			// blit onto screen
+			convert_shape_format (positions, piece);
+			sr_coord_board (screen, positions, piece.color, 1);
+
+			new_piece = false;
+		}
+		// fall dowm
+		else if (fall_time >= (BASE_TIME - 1000))
+		{
+			// new position
+			piece.y_coord -= STEP;
+			convert_shape_format(positions, piece);
+
+			if(is_valid_space (locked_positions, piece))
+			{
+				// move shape to new position
+				move_shape (screen, piece);
+			}
+			else
+			{
+				// restore shape
+			    piece.y_coord += STEP;
+			  	memcpy (positions, p_positions, sizeof (p_positions));
+
+			  	// set for new piece fetch
+			  	new_piece = true;
+			  	lock_pos(locked_positions, piece);
+			 }
+
+			 fall_time = 0;
+		}
+		// update the previous
+		memcpy (p_positions, positions, sizeof(positions));
+	}
 }

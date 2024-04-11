@@ -21,8 +21,23 @@ main ()
   setup_oled      ();
 
   // REMEMBER: DO NOT ZERO OUT PA AFR IN OLED (alr done in bt)
+//  while(1)
+//  {
+//	  // splash screen. Exit if MOVE == X
+//	  tetris(screen);
+//	  // LOSE SCREEN. Exit if MOVE == X
+//  }
 
-  tetris (screen);
+
+//	  splash_screen (screen);
+  init_hub(screen);
+  while(1)
+  {
+	  splash_screen (screen);
+	  int score = tetris (screen);
+	  lose_screen (screen);
+
+  }
 
   return EXIT_SUCCESS;
 }

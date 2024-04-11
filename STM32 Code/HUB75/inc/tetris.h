@@ -8,6 +8,8 @@
 
 #define BASE_TIME 3000
 
-void tetris (pixel_t * screen);
+int  tetris        (pixel_t * screen);
+void splash_screen (pixel_t * screen);
+void lose_screen   (pixel_t * screen);
 
 #endif

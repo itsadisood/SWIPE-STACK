@@ -155,9 +155,9 @@ board_init (pixel_t * screen)
 }
 
 void
-game_init (pixel_t * screen)
+init_hub(pixel_t * screen)
 {
-  // set up the peripherals
+// set up the peripherals
   init_io ();
   setup_dma (screen);
   setup_tim2 (10, 2, 1);
@@ -167,12 +167,17 @@ game_init (pixel_t * screen)
 
   // clear screen
   init_screen (screen, BLACK);
-
-  // init the game board
-  board_init (screen);
-
-  // enable interrupts 
+  // enable interrupts
   init_exti();
+}
+
+void
+game_init (pixel_t * screen)
+{
+  // clear screen
+  init_screen (screen, BLACK);
+  // draw game border
+  board_init (screen);
 }
 
 void 

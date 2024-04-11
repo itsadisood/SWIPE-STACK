@@ -8,24 +8,46 @@
 
 uint16_t score[34] = {
 				0x002, // Command to set the cursor at the first position line 1
-		        0x200+'S', 0x200+'C', 0x200+'O', 0x200+'R', 0x200+'E', + 0x200+':', 0x200+' ', 0x200+' ',
-		        0x200+' ', 0x200+' ', 0x200+' ', 0x200+' ', + 0x200+' ', 0x200+' ', 0x200+' ', 0x200+' ',
-		        0x0c0, // Command to set the cursor at the first position line 2
-		        0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0', + 0x200+'0', 0x200+'0', 0x200+'0',
+		        0x200+'S', 0x200+'C', 0x200+'O', 0x200+'R', 0x200+'E', + 0x200+':', 0x200+' ', 0x200+'0',
 		        0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0', + 0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0',
+		        0x0c0, // Command to set the cursor at the first position line 2
+		        0x200+'L', 0x200+'E', 0x200+'V', 0x200+'E', 0x200+'L', + 0x200+':', 0x200+' ', 0x200+' ',
+		        0x200+' ', 0x200+' ', 0x200+' ', 0x200+' ', + 0x200+' ', 0x200+' ', 0x200+'0', 0x200+'0',
 };
 
 
-void updt_score(char * scoreBuff)
+void updt_score(char * scoreBuff, char * levelBuff)
 {
     int digitLen = strlen(scoreBuff);
-	int scoreIndex = 33;
+    int levelLen = strlen(levelBuff);
+	int scoreIndex = 16;
+	int levelIndex = 33;
 	while(digitLen != 0)
 	{
 		score[scoreIndex] = 0x200 + scoreBuff[(digitLen - 1)];
 		digitLen--;
 		scoreIndex--;
 	}
+	while(levelLen != 0)
+	{
+		score[levelIndex] = 0x200 + levelBuff[(levelLen - 1)];
+		levelLen--;
+		levelIndex--;
+	}
+}
+
+void init_score()
+{
+	uint16_t og_score[34] = {
+					0x002, // Command to set the cursor at the first position line 1
+			        0x200+'S', 0x200+'C', 0x200+'O', 0x200+'R', 0x200+'E', + 0x200+':', 0x200+' ', 0x200+'0',
+			        0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0', + 0x200+'0', 0x200+'0', 0x200+'0', 0x200+'0',
+			        0x0c0, // Command to set the cursor at the first position line 2
+			        0x200+'L', 0x200+'E', 0x200+'V', 0x200+'E', 0x200+'L', + 0x200+':', 0x200+' ', 0x200+' ',
+			        0x200+' ', 0x200+' ', 0x200+' ', 0x200+' ', + 0x200+' ', 0x200+' ', 0x200+'0', 0x200+'0',
+	};
+
+	memcpy(score, og_score, sizeof(og_score));
 }
 
 void setup_oled()

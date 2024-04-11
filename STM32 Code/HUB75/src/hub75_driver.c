@@ -169,7 +169,7 @@ sr_coord_hub75 (pixel_t * screen, coord_t * positions, hub75_color_t color, bool
   {
     // Bounds Checks
     if (positions[i].x >= (HUB75_R * 2)) return;
-    if (positions[i].x >= (HUB75_C)) return;
+    if (positions[i].y >= (HUB75_C)) return;
 
     uint16_t loc = (positions[i].x & 0xf) * HUB75_C + positions[i].y;
 

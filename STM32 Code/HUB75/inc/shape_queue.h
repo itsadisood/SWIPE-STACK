@@ -26,4 +26,6 @@ Piece_t dequeue_shape (Piece_t * shape_queue);
 
 void disp_shape_queue (Piece_t * shape_queue, pixel_t * screen);
 
+Piece_t piece_init();
+
 #endif
