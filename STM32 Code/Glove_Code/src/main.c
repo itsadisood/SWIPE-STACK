@@ -7,7 +7,7 @@
   * @brief   Default main function.
   ******************************************************************************
 */
-			
+
 /** Pin definitions:
 
   PB3 -> UART5_TX -> B_RX
@@ -21,49 +21,19 @@
 #include "stm32f0xx.h"
 #include <string.h>
 
+// asm function to waste
+// CPU clocks
+void
+nano_wait(unsigned int n)
+{
+  asm("        mov r0,%0\n"
+      "repeat: sub r0,#83\n"
+      "        bgt repeat\n" : : "r"(n) : "r0", "cc");
+}
+
 // *****************************************
 // BLUETOOTH CODE **************************
 // *****************************************
-
-// main game receiver characteristics for right glove (MASTER)
-const char *RX_MACADDR_R = "E4E11295D8C6"; // CHANGE THIS LATER
-const char *RX_NAME_R   = "TetrisHub";
-const char *RX_ADVINT_R  = "100ms";
-
-// right glove transmitter characteristics (SLAVE)
-//const char *TX_MACADDR_R = "6098665B565"; // CHANGE THIS LATER (breadboard)
-const char* TX_MACADDR_R = "907BC6BA3C4B";
-const char *TX_NAME_R = "GloveR";
-const char *TX_ADVINT_R  = "100ms";
-
-// left glove transmitter characteristics (SLAVE)
-const char *TX_MACADDR_L = "E4E11295D794";	 // CHANGE THIS LATER
-const char *TX_NAME_L = "GloveL";
-const char *TX_ADVINT_L  = "100ms";
-
-const char *HUB_MADADDR = "E4E11295FAB6";
-const char *HUB_NAME    = "Hub";
-const char *HUB_ADVINT  = "100ms";
-
-// retrieve MAC address of bluetooth module
-void getATAddr()
-{
-	  uint8_t testAddrTx[8] = {'A','T','+','A','D','D','R','?'};
-	  uint8_t testAddrRx[29] = {};
-
-	  // send "AT+Addr?" command
-	  for(uint32_t i = 0; i < 8; i++){
-		  while(!(USART5->ISR & USART_ISR_TXE)){}
-		  USART5 -> TDR = testAddrTx[i];
-	  }
-
-//	   expect "OK+Mac Addr" from Bx
-//	  for(int i = 0; i < 29; i++)
-//	  {
-//		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
-//		  testAddrRx[i] = USART5->RDR;
-//	  }
-}
 
 // if configured as slave and IMME1, make yourself discoverable
 void sendATStart()
@@ -87,8 +57,8 @@ void sendATStart()
 void sendATDisc()
 {
 	char *discTx = "AT+DISC?";
-	char discRx[100] = {}; //"OK+DISCS"
-	for(uint32_t i = 0; discTx[i] != '\0'; i++)
+	char discRx[8] = {};
+	for(uint32_t i = 0; i < 8; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_TXE)){}
 		USART5 -> TDR = discTx[i];
@@ -102,6 +72,24 @@ void sendATDisc()
 	}
 }
 
+void sendATConn()
+{
+	char * conTx = "AT+CONE4E11295FAB6"; //FB?
+	char   conRx[8] = {};
+
+	for(uint32_t i = 0; conTx[i] != '\0'; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = conTx[i];
+	}
+
+//	for(uint32_t i = 0; i < 8; i++)
+//	{
+//		while(!(USART5->ISR & USART_ISR_RXNE)){}
+//		conRx[i] = USART5 -> RDR;
+//	}
+}
+
 /** Configure device in master or slave mode
  	 AT+ROLE? -> ask current role
  	 AT+ROLE1 -> set to master
@@ -109,7 +97,7 @@ void sendATDisc()
 **/
 void setATRole()
 {
-	char roleTx[8] = "AT+ROLE1";
+	char roleTx[8] = "AT+ROLE1"; // SET TO 1
 	char roleRx[8] = {};
 
 	for(uint32_t i = 0; i < 8; i++)
@@ -125,72 +113,29 @@ void setATRole()
 	}
 }
 
-// set advertising interval (not used commonly)
-void setAdvInterval()
-{
-	char* advTx = "AT+ADVI0";
-	char advRx[8] = {};
-
-	// send message to obtain advertising interval
-	for(uint32_t i = 0; i < 8; i++)
-	{
-		while(!(USART5->ISR & USART_ISR_TXE)){}
-		USART5 -> TDR = advTx[i];
-	}
-
-	// expect "OK+GET:[P]" from Bx
-	for(int i = 0; i < 8; i++)
-	{
-		while (!(USART5->ISR & USART_ISR_RXNE)) {}
-		advRx[i] = USART5->RDR;
-	}
-}
-
-/** Basic AT check
-  	get AT+OK if device ready to go
-**/
-void sendATCheck()
-{
-	  uint8_t testTX[2] = "AT";
-	  uint8_t testRX[2];
-
-	  // send "AT" test command
-	  for(uint32_t i = 0; i < 2; i++){
-		  while(!(USART5->ISR & USART_ISR_TXE)){}
-		  USART5 -> TDR = testTX[i];
-	  }
-
-	  // expect "OK" from Bx
-	  for(int i = 0; i < 2; i++)
-	  {
-		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
-		  testRX[i] = USART5->RDR;
-	  }
-}
-
 /** Configure how the bluetooth module startups
  	 AT+IMME1 -> if slave, wait for AT+START to advertise
 			  -> if master, wait for AT+DISC to discover
  	 AT+IMME0 -> start working from get go.
 **/
-//void setATImme()
-//{
-//
-//	char immeTx[8] = "AT+IMME0";
-//	char immeRx[8] = {};
-//
-//	for(uint32_t i = 0; i < 8; i++)
-//	{
-//		while(!(USART5->ISR & USART_ISR_TXE)){}
-//		USART5 -> TDR = immeTx[i];
-//	}
-//
-//	for(uint32_t i = 0; i < 8; i++)
-//	{
-//		while(!(USART5->ISR & USART_ISR_RXNE)){}
-//		immeRx[i] = USART5 -> RDR;
-//	}
-//}
+void setATImme()
+{
+
+	char immeTx[8] = "AT+IMME1"; // SET TO 1
+	char immeRx[8] = {};
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_TXE)){}
+		USART5 -> TDR = immeTx[i];
+	}
+
+	for(uint32_t i = 0; i < 8; i++)
+	{
+		while(!(USART5->ISR & USART_ISR_RXNE)){}
+		immeRx[i] = USART5 -> RDR;
+	}
+}
 
 // change name of bluetooth module (preserved across power outs)
 void setBxName()
@@ -246,12 +191,6 @@ void sendATReset()
 	  {
 		  while(!(USART5->ISR & USART_ISR_TXE)){}
 		  USART5 -> TDR = nameTx[i];
-	  }
-
-	  for(int i = 0; i < 8; i++)
-	  {
-		  while (!(USART5->ISR & USART_ISR_RXNE)) {}
-		  nameRx[i] = USART5->RDR;
 	  }
 }
 
@@ -321,8 +260,6 @@ void setup_BX_UART()
 void BluetoothSetup()
 {
 //	sendATRenew();
-//	sendATCheck();
-//	getATAddr();
 //	setBxName();
 	setAdvInterval();
 	setATRole();
@@ -332,8 +269,8 @@ void BluetoothSetup()
 //	sendATReset();
 //	sendATStart();
 //	sendATDisc();
+	sendATConn(); // CALL TO PAIR
 }
-
 
 // *****************************************
 // IMU CODE ********************************
@@ -342,23 +279,27 @@ void BluetoothSetup()
 // sizing constants
 #define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
 #define PREDICTIONS_PER_SECOND 		5 								// # of times the entire toolchain runs to display a output
-#define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
+#define PACKET_SIZE					100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // gesture senstivity thresholds
-#define DEADZONE_PITCH				5								// up and down twist dead zone
-#define PITCH_UP_LIMIT				23								// rotate
-#define PITCH_DN_LIMIT				23								// place down
+#define DEADZONE_PITCH				4								// up and down twist dead zone
+#define PITCH_UP_LIMIT				22								// rotate
+#define PITCH_DN_LIMIT				16								// place down
 
-#define DEADZONE_ROLL 				5								// left and right twist dead zone
-#define ROLL_LFT_LIMIT 				28								// swipe left
-#define ROLL_RGT_LIMIT				28								// swipe right
+#define DEADZONE_ROLL 				4								// left and right twist dead zone
+#define ROLL_LFT_LIMIT 				21								// swipe left
+#define ROLL_RGT_LIMIT				16								// swipe right
 
 uint8_t data_fifo[FIFOSIZE];
+
+uint8_t startup = 'Y';
+int init_yaw = 0;
 
 struct Packet
 {
 	float roll  [PACKET_SIZE];
 	float pitch [PACKET_SIZE];
+	float yaw [PACKET_SIZE];
 };
 
 struct Packet curr_packet;
@@ -392,11 +333,11 @@ int detect_gesture(struct Packet curr_packet)
         {
         	down_pitch_count++;
         }
-		if (curr_packet.roll[i] < -(DEADZONE_ROLL + ROLL_RGT_LIMIT))
+        if(curr_packet.yaw[i] > (DEADZONE_ROLL + ROLL_RGT_LIMIT))
 		{
 			right_roll_count++;
 		}
-		if(curr_packet.roll[i] > (DEADZONE_ROLL + ROLL_LFT_LIMIT))
+		if(curr_packet.yaw[i] < -(DEADZONE_ROLL + ROLL_LFT_LIMIT))
 		{
 			left_roll_count++;
 		}
@@ -417,13 +358,13 @@ int detect_gesture(struct Packet curr_packet)
     else if (left_roll_count >= PACKET_SIZE / 2)
 	{
 		sendBxChar('L');
-        last_gesture = 'L';
+        last_gesture = 'N';
         return 1;
 	}
 	else if (right_roll_count >= PACKET_SIZE / 2)
 	{
 		sendBxChar('R');
-		last_gesture = 'R';
+		last_gesture = 'N';
 		return 1;
 	}
     else
@@ -435,30 +376,36 @@ int detect_gesture(struct Packet curr_packet)
 
 void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 {
-	//only have 10 ms for this processing
-	if(data_fifo[0] == 0xAA && data_fifo[1] == 0XAA) // enforce header check
+//	debugSendString("Pred");
+	if(data_fifo[0] == 0xAA && data_fifo[1] == 0XAA)
 	{
 		if(curr_sample_num == PACKET_SIZE)
 		{
-			// do prediction call
 			curr_sample_num = 0;
-			//sendBxChar('P');
-			//last_gesture = 'P';
 			detect_gesture(curr_packet);
 		}
 		else
 		{
-			// fill packet buffer
-			DMA1 -> IFCR |= DMA_IFCR_CTCIF3; // clear flag
+			DMA1 -> IFCR |= DMA_IFCR_CTCIF3;
+			curr_packet.yaw[curr_sample_num] = convertToFloat(data_fifo[3], data_fifo[4]) - init_yaw;
 			curr_packet.pitch[curr_sample_num] = convertToFloat(data_fifo[5], data_fifo[6]);
-			curr_packet.roll[curr_sample_num] = convertToFloat(data_fifo[7], data_fifo[8]);
+			if(startup == 'Y')
+			{
+				init_yaw = curr_packet.yaw[curr_sample_num];
+				startup = 'N';
+			}
+//			curr_packet.roll[curr_sample_num] = convertToFloat(data_fifo[7], data_fifo[8]);
+//			char* output = malloc(sizeof(char) * 70);
+//			sprintf(output, "y:%6.2f, P:%6.2f\n\r",
+//							curr_packet.yaw[curr_sample_num], curr_packet.pitch[curr_sample_num]);
+//
+//
+//			debugSendString(output);
 			curr_sample_num += 1;
 		}
 	}
-	else // got mis-aligned, cleanup and start again.
+	else
 	{
-//		sendBxChar('M');
-//		last_gesture = 'M';
 		DMA1_Channel3->CCR &= ~DMA_CCR_EN;
 		setup_IMU_DMA();
 	}
@@ -513,15 +460,19 @@ void sendBxChar(char txdata)
 	}
 }
 
-void sendBxString(char* data)
-{
+
+void debugSend(char txdata) {
+  while(!(USART5->ISR & USART_ISR_TXE)){}
+      USART5->TDR = txdata;
+}
+void debugSendString(char* data) {
   int i = 0;
-  while(data[i] != '\0' && (strcmp(last_gesture, data) != 0))
-  {
-    sendBxChar(data[i]);
+  while(data[i] != '\0') {
+    debugSend(data[i]);
     i++;
   }
 }
+
 
 // ************************************
 // CODE ENTRY *************************
