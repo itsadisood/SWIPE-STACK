@@ -130,7 +130,7 @@ font_init (uint8_t index, int row)
   }
   else
   {
-	  new_font.x_coord = 4;
+	  new_font.x_coord = 1;
   }
   new_font.y_coord = 2;
   new_font.letter = get_letter (index);
