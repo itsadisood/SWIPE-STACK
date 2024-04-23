@@ -235,6 +235,7 @@ tetris (pixel_t * screen)
 {
   // clean up from last game
   clean_up();
+  int levelUpThreshold = (level + 1) * 200;
 
   // initialize game pieces
   Piece_t piece;
@@ -393,14 +394,12 @@ tetris (pixel_t * screen)
     // update the previous
     memcpy (p_positions, positions, sizeof(positions));
 
-    if(scoreNum > ((level + 1) * 200))
+    if(scoreNum > levelUpThreshold)
     {
-    	level++; // crank up the level after every 200 points
-    	if(level == 11)
-    	{
-    		level = 10; // cap level
-    	}
+    	level++;
+    	levelUpThreshold += ((level + 1) * 200);
     }
+
     // update scoreBuffer
     sprintf(scoreBuff, "%llu", scoreNum);
     sprintf(levelBuff, "%hu", level);

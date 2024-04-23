@@ -20,14 +20,6 @@ main ()
   ss_bluetooth    ();
   setup_oled      ();
 
-  // REMEMBER: DO NOT ZERO OUT PA AFR IN OLED (alr done in bt)
-//  while(1)
-//  {
-//	  // splash screen. Exit if MOVE == X
-//	  tetris(screen);
-//	  // LOSE SCREEN. Exit if MOVE == X
-//  }
-
 
 //	  splash_screen (screen);
   init_hub(screen);
