@@ -64,7 +64,6 @@ void sendATDisc()
 		USART5 -> TDR = discTx[i];
 	}
 
-	// Is this required?
 	for(uint32_t i = 0; i < 100; i++)
 	{
 		while(!(USART5->ISR & USART_ISR_RXNE)){}
@@ -74,7 +73,7 @@ void sendATDisc()
 
 void sendATConn()
 {
-	char * conTx = "AT+CONE4E11295FAB6"; //FB?
+	char * conTx = "AT+CONE4E11295FAB6";
 	char   conRx[8] = {};
 
 	for(uint32_t i = 0; conTx[i] != '\0'; i++)
@@ -83,11 +82,6 @@ void sendATConn()
 		USART5 -> TDR = conTx[i];
 	}
 
-//	for(uint32_t i = 0; i < 8; i++)
-//	{
-//		while(!(USART5->ISR & USART_ISR_RXNE)){}
-//		conRx[i] = USART5 -> RDR;
-//	}
 }
 
 /** Configure device in master or slave mode
@@ -213,25 +207,6 @@ void sendATCon()
 	}
 }
 
-void setATImme()
-{
-	char * immeTx = "AT+IMME1";
-	char immeRx[8] = {};
-
-	for(uint32_t i = 0; immeTx[i] != '\0'; i++)
-	{
-		while(!(USART5->ISR & USART_ISR_TXE)){}
-		USART5 -> TDR = immeTx[i];
-	}
-
-	for(uint32_t i = 0; i < 8; i++)
-	{
-		while(!(USART5->ISR & USART_ISR_RXNE)){}
-		immeRx[i] = USART5 -> RDR;
-	}
-}
-
-
 void setup_BX_GPIO()
 {
 	RCC -> AHBENR |= RCC_AHBENR_GPIOBEN;                    // Enable GPIO clock
@@ -261,15 +236,16 @@ void BluetoothSetup()
 {
 //	sendATRenew();
 //	setBxName();
-	setAdvInterval();
-	setATRole();
-	setATImme();
-	sendATDisc();
+//	setAdvInterval();
+//	setATRole();
+//	setATImme();
+//	sendATDisc();
 //	sendATCon();
 //	sendATReset();
 //	sendATStart();
 //	sendATDisc();
 	sendATConn(); // CALL TO PAIR
+
 }
 
 // *****************************************
@@ -278,34 +254,33 @@ void BluetoothSetup()
 
 // sizing constants
 #define FIFOSIZE 					19								// # of bytes to receive from IMU into temp buffer before processing
-#define PREDICTIONS_PER_SECOND 		5 								// # of times the entire toolchain runs to display a output
-#define PACKET_SIZE					100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
+#define PREDICTIONS_PER_SECOND 	5 								// # of times the entire toolchain runs to display a output
+#define PACKET_SIZE				100 / PREDICTIONS_PER_SECOND 	// # of samples that must be filled in before calculating an output
 
 // gesture senstivity thresholds
 #define DEADZONE_PITCH				4								// up and down twist dead zone
-#define PITCH_UP_LIMIT				22								// rotate
-#define PITCH_DN_LIMIT				16								// place down
+#define PITCH_UP_LIMIT				25								// rotate
+#define PITCH_DN_LIMIT				26								// place down
 
-#define DEADZONE_ROLL 				4								// left and right twist dead zone
-#define ROLL_LFT_LIMIT 				21								// swipe left
-#define ROLL_RGT_LIMIT				16								// swipe right
+#define DEADZONE_YAW 				4								// left and right twist dead zone
+#define YAW_LFT_LIMIT 				21								// swipe left
+#define YAW_RGT_LIMIT				16								// swipe right
 
 uint8_t data_fifo[FIFOSIZE];
 
 uint8_t startup = 'Y';
 int init_yaw = 0;
+int curr_sample_num = 0;
+char last_gesture = 'N';
 
 struct Packet
 {
-	float roll  [PACKET_SIZE];
 	float pitch [PACKET_SIZE];
 	float yaw [PACKET_SIZE];
 };
 
 struct Packet curr_packet;
 
-int curr_sample_num = 0;
-char last_gesture = 'N';
 
 float convertToFloat(uint8_t lsb, uint8_t msb)
 {
@@ -316,12 +291,12 @@ float convertToFloat(uint8_t lsb, uint8_t msb)
 	return final_number;
 }
 
-int detect_gesture(struct Packet curr_packet)
+void detect_gesture(struct Packet curr_packet)
 {
     int down_pitch_count = 0;
     int up_pitch_count = 0;
-    int left_roll_count = 0;
-    int right_roll_count = 0;
+    int left_yaw_count = 0;
+    int right_yaw_count = 0;
 
     for (int i = 0; i < PACKET_SIZE; i++)
     {
@@ -333,13 +308,13 @@ int detect_gesture(struct Packet curr_packet)
         {
         	down_pitch_count++;
         }
-        if(curr_packet.yaw[i] > (DEADZONE_ROLL + ROLL_RGT_LIMIT))
+        if(curr_packet.yaw[i] > (DEADZONE_YAW + YAW_RGT_LIMIT))
 		{
-			right_roll_count++;
+			right_yaw_count++;
 		}
-		if(curr_packet.yaw[i] < -(DEADZONE_ROLL + ROLL_LFT_LIMIT))
+		if(curr_packet.yaw[i] < -(DEADZONE_YAW + YAW_LFT_LIMIT))
 		{
-			left_roll_count++;
+			left_yaw_count++;
 		}
     }
 
@@ -347,36 +322,30 @@ int detect_gesture(struct Packet curr_packet)
     {
         sendBxChar('D');
         last_gesture = 'D';
-        return 1;
     }
     else if (up_pitch_count >= PACKET_SIZE / 2)
 	{
 		sendBxChar('U');
 		last_gesture = 'U';
-		return 1;
 	}
-    else if (left_roll_count >= PACKET_SIZE / 2)
+    else if (left_yaw_count >= PACKET_SIZE / 2)
 	{
 		sendBxChar('L');
         last_gesture = 'N';
-        return 1;
 	}
-	else if (right_roll_count >= PACKET_SIZE / 2)
+	else if (right_yaw_count >= PACKET_SIZE / 2)
 	{
 		sendBxChar('R');
 		last_gesture = 'N';
-		return 1;
 	}
     else
 	{
     	last_gesture = 'N';
 	}
-    return 0;
 }
 
 void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 {
-//	debugSendString("Pred");
 	if(data_fifo[0] == 0xAA && data_fifo[1] == 0XAA)
 	{
 		if(curr_sample_num == PACKET_SIZE)
@@ -394,13 +363,6 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 				init_yaw = curr_packet.yaw[curr_sample_num];
 				startup = 'N';
 			}
-//			curr_packet.roll[curr_sample_num] = convertToFloat(data_fifo[7], data_fifo[8]);
-//			char* output = malloc(sizeof(char) * 70);
-//			sprintf(output, "y:%6.2f, P:%6.2f\n\r",
-//							curr_packet.yaw[curr_sample_num], curr_packet.pitch[curr_sample_num]);
-//
-//
-//			debugSendString(output);
 			curr_sample_num += 1;
 		}
 	}
@@ -411,12 +373,26 @@ void DMA1_CH2_3_DMA2_CH1_2_IRQHandler()
 	}
 }
 
+void EXTI0_1_IRQHandler()
+{
+	EXTI->PR |= EXTI_PR_PR0;
+	sendBxChar('X');
+}
+
 void setup_IMU_GPIO(void)
 {
-	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;
-	GPIOB->MODER &= ~(GPIO_MODER_MODER7);
-	GPIOB->MODER |= GPIO_MODER_MODER7_1; 		// AFR mode (UART)
-	GPIOB->AFR[0] &= ~(GPIO_AFRL_AFRL7); 	   	// AF0
+	RCC->AHBENR |= RCC_AHBENR_GPIOBEN;					// portB clock
+	GPIOB->MODER &= ~(GPIO_MODER_MODER7);				// clearing PB7 to input
+	GPIOB->MODER |= GPIO_MODER_MODER7_1; 				// setting PB7 to AFR mode (UART)
+	GPIOB->AFR[0] &= ~(GPIO_AFRL_AFRL7); 	   			// selecting AF0 for PB7
+
+	RCC->APB2ENR |= RCC_APB2ENR_SYSCFGCOMPEN;  			// enable syscfg clock
+	SYSCFG->EXTICR[0] &= SYSCFG_EXTICR1_EXTI0_PA; 		// enable pa0 on EXTI0
+	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;					// portA clock
+	GPIOA->MODER &= ~(GPIO_MODER_MODER0);				// clearing PA0 to
+	EXTI->RTSR |= EXTI_RTSR_TR0;						// interrupt on Rising edge PA0
+	EXTI->IMR |= EXTI_IMR_MR0;							// enable PA0 interrupt
+	NVIC->ISER[0] |= (1 << EXTI0_1_IRQn);
 }
 
 void setup_IMU_UART(void)
@@ -460,18 +436,18 @@ void sendBxChar(char txdata)
 	}
 }
 
-
-void debugSend(char txdata) {
-  while(!(USART5->ISR & USART_ISR_TXE)){}
-      USART5->TDR = txdata;
-}
-void debugSendString(char* data) {
-  int i = 0;
-  while(data[i] != '\0') {
-    debugSend(data[i]);
-    i++;
-  }
-}
+//void debugSend(char txdata) {
+//  while(!(USART5->ISR & USART_ISR_TXE)){}
+//      USART5->TDR = txdata;
+//}
+//
+//void debugSendString(char* data) {
+//  int i = 0;
+//  while(data[i] != '\0') {
+//    debugSend(data[i]);
+//    i++;
+//  }
+//}
 
 
 // ************************************
